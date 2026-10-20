@@ -77,6 +77,31 @@ describe('clean maps', () => {
     expect(rules(checkFile(map))).toEqual([]);
   });
 
+  it('reads old JSON maps that keep tiles in an object keyed by id', () => {
+    const map = file(
+      'old-json.json',
+      JSON.stringify({
+        width: 1,
+        height: 1,
+        tilewidth: 16,
+        tileheight: 16,
+        orientation: 'orthogonal',
+        tilesets: [
+          {
+            firstgid: 1,
+            name: 'collection',
+            tilecount: 2,
+            tiles: { '0': { image: 'tiles.png' }, '1': { image: 'gone.png' } },
+          },
+        ],
+        layers: [{ type: 'tilelayer', name: 'L', width: 1, height: 1, data: [2] }],
+      }),
+    );
+    expect(rules(checkFile(map))).toEqual([
+      "missing-image: tileset 'collection' (firstgid 1) tile 1: image gone.png does not exist",
+    ]);
+  });
+
   it('works out the tile count of old tilesets from the image size', () => {
     const map = file(
       'old.tmx',
@@ -102,9 +127,9 @@ describe('problems', () => {
     );
     expect(rules(checkFile(map))).toEqual([
       'missing-file: tileset (firstgid 1): gone.tsx does not exist',
-      "missing-file: tileset 'inline' (firstgid 5): image gone.png does not exist",
+      "missing-image: tileset 'inline' (firstgid 5): image gone.png does not exist",
       "missing-file: layer 'O' object 1: template boss.tx does not exist",
-      "missing-file: layer 'Sky': image sky.png does not exist",
+      "missing-image: layer 'Sky': image sky.png does not exist",
     ]);
   });
 
@@ -163,6 +188,16 @@ describe('problems', () => {
     expect(checkFile(map).map((d) => `${d.severity} ${d.rule}: ${d.message}`)).toEqual([
       'warning image-size: resized.png is 48x32 but the tileset says 32x32, open and save the tileset in Tiled to update it',
     ]);
+  });
+
+  it('skips id checks for objects from maps older than object ids', () => {
+    const map = file(
+      'no-ids.tmx',
+      tmx(
+        '<objectgroup name="O"><object x="1" y="1"/><object name="p" x="2" y="2"/></objectgroup>',
+      ),
+    );
+    expect(rules(checkFile(map))).toEqual([]);
   });
 
   it('reports terrain sets with more colors than Tiled loads', () => {

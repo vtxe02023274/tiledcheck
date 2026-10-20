@@ -20,7 +20,8 @@ export const MAX_TERRAIN_COLORS = 254;
 
 export const RULES: Record<string, string> = {
   'load-error': 'The file cannot be read or parsed',
-  'missing-file': 'An external tileset, image or template does not exist',
+  'missing-file': 'An external tileset or object template does not exist',
+  'missing-image': 'A tileset or image layer image does not exist',
   'image-size': 'A tileset image is not the size the tileset says, so tile ids shift',
   'gid-out-of-range': 'A tile refers to a gid that no tileset covers',
   'tileset-overlap': 'Two tilesets claim the same gid range',
@@ -44,10 +45,10 @@ export function checkFile(file: string): Diagnostic[] {
     }
     map = loadMap(file);
   } catch (err) {
-    if (err instanceof LoadError) {
-      return [{ severity: 'error', rule: 'load-error', file, where: 'file', message: err.message }];
-    }
-    throw err;
+    // Files in the wild have every shape imaginable; report instead of crashing.
+    const message =
+      err instanceof LoadError ? err.message : `cannot parse: ${(err as Error).message}`;
+    return [{ severity: 'error', rule: 'load-error', file, where: 'file', message }];
   }
   return checkMap(map);
 }
@@ -158,12 +159,15 @@ export function checkMap(map: TiledMap): Diagnostic[] {
       }
       case 'objects':
         for (const o of layer.objects) {
-          const ow = `${where} object ${o.id}${o.name ? ` '${o.name}'` : ''}`;
-          const seen = objectIds.get(o.id);
-          if (seen !== undefined)
-            report('error', 'duplicate-object-id', ow, `id ${o.id} is also used in ${seen}`);
-          else objectIds.set(o.id, where);
-          if (map.nextObjectId !== undefined && o.id >= map.nextObjectId) {
+          const label = o.id !== undefined ? `object ${o.id}` : `object at (${o.x}, ${o.y})`;
+          const ow = `${where} ${label}${o.name ? ` '${o.name}'` : ''}`;
+          if (o.id !== undefined) {
+            const seen = objectIds.get(o.id);
+            if (seen !== undefined)
+              report('error', 'duplicate-object-id', ow, `id ${o.id} is also used in ${seen}`);
+            else objectIds.set(o.id, where);
+          }
+          if (o.id !== undefined && map.nextObjectId !== undefined && o.id >= map.nextObjectId) {
             report(
               'warning',
               'next-object-id',
@@ -201,7 +205,7 @@ export function checkMap(map: TiledMap): Diagnostic[] {
         break;
       case 'image':
         if (layer.image && !existsSync(resolveRef(map.file, layer.image))) {
-          report('error', 'missing-file', where, `image ${layer.image} does not exist`);
+          report('error', 'missing-image', where, `image ${layer.image} does not exist`);
         }
         break;
     }
@@ -215,7 +219,7 @@ function checkTileset(ts: Tileset, where: string, push: (d: Diagnostic) => void)
   if (ts.image) {
     const path = resolveRef(ts.file, ts.image);
     if (!existsSync(path)) {
-      report('missing-file', where, `image ${ts.image} does not exist`);
+      report('missing-image', where, `image ${ts.image} does not exist`);
     } else if (ts.imageWidth && ts.imageHeight) {
       const real = imageSize(path);
       if (real && (real.width !== ts.imageWidth || real.height !== ts.imageHeight)) {
@@ -230,7 +234,7 @@ function checkTileset(ts: Tileset, where: string, push: (d: Diagnostic) => void)
   }
   for (const t of ts.tileImages) {
     if (!existsSync(resolveRef(ts.file, t.image))) {
-      report('missing-file', `${where} tile ${t.id}`, `image ${t.image} does not exist`);
+      report('missing-image', `${where} tile ${t.id}`, `image ${t.image} does not exist`);
     }
   }
   for (const w of ts.wangSets) {

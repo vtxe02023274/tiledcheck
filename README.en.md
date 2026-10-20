@@ -41,23 +41,24 @@ In GitHub Actions:
 
 ## Rules
 
-| Rule                  | Level   | What it means                                                                                      |
-| --------------------- | ------- | -------------------------------------------------------------------------------------------------- |
-| `load-error`          | error   | The file cannot be read or parsed                                                                  |
-| `missing-file`        | error   | An external tileset, image, image layer image or object template is missing                        |
-| `image-size`          | warning | A tileset image is not the size the tileset says, so tile ids shift (PNG, GIF, BMP, JPEG)          |
-| `gid-out-of-range`    | error   | A tile or object gid is not in any tileset (flip flags are removed first)                          |
-| `tileset-overlap`     | error   | Two tilesets claim the same gids                                                                   |
-| `terrain-colors`      | error   | A terrain set has more than 254 colors; since Tiled 1.10.2 none of the tileset's terrain sets load |
-| `layer-size`          | error   | The number of tiles in a layer does not match width x height                                       |
-| `tile-data`           | error   | Tile data cannot be decoded (zstd only warns, since it is not checked)                             |
-| `duplicate-object-id` | error   | Two objects share an id                                                                            |
-| `next-object-id`      | warning | An object id is not below the map's nextobjectid, so Tiled may renumber it                         |
-| `object-outside-map`  | warning | An object is entirely outside the map (orthogonal, finite maps only)                               |
+| Rule                  | Level   | What it means                                                                                                                              |
+| --------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `load-error`          | error   | The file cannot be read or parsed                                                                                                          |
+| `missing-file`        | error   | An external tileset or object template is missing                                                                                          |
+| `missing-image`       | error   | A tileset or image layer image is missing. Engines that load images separately, like Phaser, can turn it off with `--ignore missing-image` |
+| `image-size`          | warning | A tileset image is not the size the tileset says, so tile ids shift (PNG, GIF, BMP, JPEG)                                                  |
+| `gid-out-of-range`    | error   | A tile or object gid is not in any tileset (flip flags are removed first)                                                                  |
+| `tileset-overlap`     | error   | Two tilesets claim the same gids                                                                                                           |
+| `terrain-colors`      | error   | A terrain set has more than 254 colors; since Tiled 1.10.2 none of the tileset's terrain sets load                                         |
+| `layer-size`          | error   | The number of tiles in a layer does not match width x height                                                                               |
+| `tile-data`           | error   | Tile data cannot be decoded (zstd only warns, since it is not checked)                                                                     |
+| `duplicate-object-id` | error   | Two objects share an id                                                                                                                    |
+| `next-object-id`      | warning | An object id is not below the map's nextobjectid, so Tiled may renumber it                                                                 |
+| `object-outside-map`  | warning | An object is entirely outside the map (orthogonal, finite maps only)                                                                       |
 
 CSV, base64 (uncompressed, zlib, gzip), the old XML tile format, infinite map chunks and group layers are supported. When an old file leaves out `tilecount`, it is worked out from the image size the way Tiled does, or extended up to the next tileset's firstgid.
 
-Tested against the 22 example maps in the Tiled source tree, both the TMX originals and JSON copies exported by Tiled, with the same results and no false positives (only two warnings for objects that really are outside their map).
+Tested against the 22 example maps in the Tiled source tree, both the TMX originals and JSON copies exported by Tiled, with the same results and no false positives (only two warnings for objects that really are outside their map). It also ran over the 108 map files in phaserjs/examples (with `--ignore missing-image`) and only reported one map with a wrong tilecount and three files that are not Tiled maps at all.
 
 ## Development
 

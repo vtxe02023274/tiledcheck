@@ -160,7 +160,7 @@ function tilesetFromJson(file: string, t: any): Tileset {
     image: t.image,
     imageWidth: t.imagewidth === undefined ? undefined : num(t.imagewidth),
     imageHeight: t.imageheight === undefined ? undefined : num(t.imageheight),
-    tileImages: (t.tiles ?? [])
+    tileImages: jsonTiles(t.tiles)
       .filter((tile: any) => tile.image)
       .map((tile: any) => ({ id: num(tile.id), image: tile.image })),
     wangSets: (t.wangsets ?? []).map((w: any): WangSet => ({
@@ -168,6 +168,18 @@ function tilesetFromJson(file: string, t: any): Tileset {
       colorCount: (w.colors ?? []).length,
     })),
   };
+}
+
+/**
+ * Tiled before 1.2 stored tiles as an object keyed by tile id instead of an
+ * array, and Phaser and other tools still ship maps like that.
+ */
+function jsonTiles(tiles: unknown): any[] {
+  if (Array.isArray(tiles)) return tiles;
+  if (tiles && typeof tiles === 'object') {
+    return Object.entries(tiles).map(([id, tile]) => ({ id: num(id), ...(tile as object) }));
+  }
+  return [];
 }
 
 function layerFromJson(l: any, infinite: boolean): Layer {
@@ -207,7 +219,7 @@ function layerFromJson(l: any, infinite: boolean): Layer {
 
 function objectFromJson(o: any): MapObject {
   return {
-    id: num(o.id),
+    id: o.id === undefined ? undefined : num(o.id),
     name: o.name ?? '',
     gid: o.gid === undefined ? undefined : num(o.gid),
     template: o.template,
@@ -307,7 +319,7 @@ function layersFromXml(parent: any, infinite: boolean): Layer[] {
       ...base(g),
       kind: 'objects',
       objects: (g.object ?? []).map((o: any) => ({
-        id: num(o.id),
+        id: o.id === undefined ? undefined : num(o.id),
         name: o.name ?? '',
         gid: o.gid === undefined ? undefined : num(o.gid),
         template: o.template,

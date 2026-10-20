@@ -63,7 +63,8 @@ export interface TileLayer extends LayerBase {
 }
 
 export interface MapObject {
-  id: number;
+  /** Undefined in very old maps, written before Tiled gave objects ids. */
+  id?: number;
   name: string;
   gid?: number;
   template?: string;
