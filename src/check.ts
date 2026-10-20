@@ -33,6 +33,7 @@ export const RULES: Record<string, string> = {
   'next-object-id': 'An object id is not below the map nextobjectid',
   'object-outside-map': 'An object lies completely outside the map',
   'world-overlap': 'Two maps in a world are placed on top of each other',
+  'unused-tileset': 'No tile or object in the map uses a tileset',
 };
 
 export function checkFile(file: string): Diagnostic[] {
@@ -116,6 +117,8 @@ export function checkMap(map: TiledMap): Diagnostic[] {
     unknownRanges || ranges.some((r) => gid >= r.first && gid <= r.last);
 
   // --- layers and objects
+  const used = new Set<number>();
+  let usageKnown = true;
   const objectIds = new Map<number, string>();
   const mapWidth = map.width * map.tileWidth;
   const mapHeight = map.height * map.tileHeight;
@@ -146,8 +149,10 @@ export function checkMap(map: TiledMap): Diagnostic[] {
           );
         }
         const bad = new Map<number, number>();
+        if (!layer.gids) usageKnown = false;
         for (const raw of layer.gids ?? []) {
           const gid = raw & GID_MASK;
+          if (gid) used.add(gid);
           if (gid && !covered(gid)) bad.set(gid, (bad.get(gid) ?? 0) + 1);
         }
         for (const [gid, count] of bad) {
@@ -178,6 +183,9 @@ export function checkMap(map: TiledMap): Diagnostic[] {
               `id ${o.id} is not below nextobjectid ${map.nextObjectId}`,
             );
           }
+          if (o.gid !== undefined) used.add(o.gid & GID_MASK);
+          // A template can bring its own tileset, so it may use one the map lists.
+          if (o.template) usageKnown = false;
           if (o.gid !== undefined && o.gid & GID_MASK && !covered(o.gid & GID_MASK)) {
             report(
               'error',
@@ -211,6 +219,15 @@ export function checkMap(map: TiledMap): Diagnostic[] {
           report('error', 'missing-image', where, `image ${layer.image} does not exist`);
         }
         break;
+    }
+  }
+
+  if (usageKnown && !unknownRanges) {
+    const usedGids = [...used];
+    for (const r of ranges) {
+      if (!usedGids.some((gid) => gid >= r.first && gid <= r.last)) {
+        report('warning', 'unused-tileset', r.where, 'no tile or object in this map uses it');
+      }
     }
   }
   return out;

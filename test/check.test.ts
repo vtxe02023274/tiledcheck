@@ -183,11 +183,38 @@ describe('problems', () => {
     const map = file(
       'resized.tmx',
       tmx(`<tileset firstgid="1" name="r" tilewidth="16" tileheight="16" tilecount="4" columns="2">
-  <image source="resized.png" width="32" height="32"/></tileset>`),
+  <image source="resized.png" width="32" height="32"/></tileset>
+<layer id="1" name="L" width="3" height="2"><data encoding="csv">1,0,0,0,0,0</data></layer>`),
     );
     expect(checkFile(map).map((d) => `${d.severity} ${d.rule}: ${d.message}`)).toEqual([
       'warning image-size: resized.png is 48x32 but the tileset says 32x32, open and save the tileset in Tiled to update it',
     ]);
+  });
+
+  it('warns about tilesets nothing in the map uses', () => {
+    const tileset = (first: number, name: string) =>
+      `<tileset firstgid="${first}" name="${name}" tilewidth="16" tileheight="16" tilecount="4" columns="2"><image source="tiles.png" width="32" height="32"/></tileset>`;
+    const map = file(
+      'unused.tmx',
+      tmx(
+        `${tileset(1, 'ground')}${tileset(5, 'items')}${tileset(9, 'spare')}
+<layer id="1" name="L" width="3" height="2"><data encoding="csv">1,2,0,0,0,0</data></layer>
+<objectgroup id="2" name="O"><object id="1" gid="2147483654" x="0" y="16" width="16" height="16"/></objectgroup>`,
+      ),
+    );
+    // The object uses items (gid 6, flipped), only spare is unused.
+    expect(rules(checkFile(map))).toEqual([
+      "unused-tileset: tileset 'spare' (firstgid 9): no tile or object in this map uses it",
+    ]);
+
+    const withTemplate = file(
+      'unused-template.tmx',
+      tmx(
+        `${tileset(1, 'ground')}<objectgroup id="1" name="O"><object id="1" template="enemy.tx" x="0" y="0"/></objectgroup>`,
+      ),
+    );
+    // A template may bring a tile object from that tileset, so stay quiet.
+    expect(rules(checkFile(withTemplate))).toEqual([]);
   });
 
   it('skips id checks for objects from maps older than object ids', () => {
