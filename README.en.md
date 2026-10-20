@@ -20,7 +20,7 @@ Requires Node.js 20 or later.
 npx github:vtxe02023274/tiledcheck maps/
 ```
 
-Pass maps, tilesets (.tsx / .tsj) or folders; folders are searched recursively for maps. The exit code is 1 when there is an error.
+Pass maps, tilesets (.tsx / .tsj), worlds (.world, which checks every map they list) or folders; folders are searched recursively for maps and worlds. The exit code is 1 when there is an error.
 
 | Option            | Effect                                                      |
 | ----------------- | ----------------------------------------------------------- |
@@ -55,6 +55,7 @@ In GitHub Actions:
 | `duplicate-object-id` | error   | Two objects share an id                                                                                                                    |
 | `next-object-id`      | warning | An object id is not below the map's nextobjectid, so Tiled may renumber it                                                                 |
 | `object-outside-map`  | warning | An object is entirely outside the map (orthogonal, finite maps only)                                                                       |
+| `world-overlap`       | warning | Two maps in a .world are placed on top of each other                                                                                       |
 
 CSV, base64 (uncompressed, zlib, gzip), the old XML tile format, infinite map chunks and group layers are supported. When an old file leaves out `tilecount`, it is worked out from the image size the way Tiled does, or extended up to the next tileset's firstgid.
 

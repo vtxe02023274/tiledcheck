@@ -3,13 +3,13 @@ import { extname, join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
 import { checkFile, RULES, type Diagnostic } from './check.js';
 
-const MAP_EXTENSIONS = new Set(['.tmx', '.tmj']);
+const MAP_EXTENSIONS = new Set(['.tmx', '.tmj', '.world']);
 
 const HELP = `usage: tiledcheck [options] <map or folder>...
 
 Checks Tiled maps (.tmx, .tmj) and the tilesets, images and templates they use.
-Tileset files (.tsx, .tsj) can be checked on their own. Folders are searched
-recursively for maps.
+Tileset files (.tsx, .tsj) can be checked on their own, and worlds (.world)
+check every map they list. Folders are searched recursively for maps and worlds.
 
 options:
   --json            print diagnostics as JSON

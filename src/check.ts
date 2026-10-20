@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { extname } from 'node:path';
 import { imageSize } from './image.js';
+import { readFileSync } from 'node:fs';
 import { LoadError, loadMap, loadTileset, resolveRef } from './load.js';
 import { allLayers, GID_MASK, type TiledMap, type Tileset } from './model.js';
 
@@ -31,12 +32,14 @@ export const RULES: Record<string, string> = {
   'duplicate-object-id': 'Two objects share an id',
   'next-object-id': 'An object id is not below the map nextobjectid',
   'object-outside-map': 'An object lies completely outside the map',
+  'world-overlap': 'Two maps in a world are placed on top of each other',
 };
 
 export function checkFile(file: string): Diagnostic[] {
   const ext = extname(file).toLowerCase();
   let map: TiledMap;
   try {
+    if (ext === '.world') return checkWorld(file);
     if (ext === '.tsx' || ext === '.tsj') {
       const ts = loadTileset(file);
       const out: Diagnostic[] = [];
@@ -246,4 +249,68 @@ function checkTileset(ts: Tileset, where: string, push: (d: Diagnostic) => void)
       );
     }
   }
+}
+
+/**
+ * A world lists maps and where they sit. Every map in it is checked, and
+ * maps that do not exist or overlap each other are reported.
+ */
+function checkWorld(file: string): Diagnostic[] {
+  let world: {
+    maps?: { fileName: string; x: number; y: number; width?: number; height?: number }[];
+  };
+  try {
+    world = JSON.parse(readFileSync(file, 'utf8'));
+  } catch (err) {
+    return [
+      {
+        severity: 'error',
+        rule: 'load-error',
+        file,
+        where: 'file',
+        message: `invalid world: ${(err as Error).message}`,
+      },
+    ];
+  }
+  const out: Diagnostic[] = [];
+  const placed: { name: string; x: number; y: number; w: number; h: number }[] = [];
+  for (const entry of world.maps ?? []) {
+    const path = resolveRef(file, entry.fileName);
+    if (!existsSync(path)) {
+      out.push({
+        severity: 'error',
+        rule: 'missing-file',
+        file,
+        where: `map ${entry.fileName}`,
+        message: `${entry.fileName} does not exist`,
+      });
+      continue;
+    }
+    out.push(...checkFile(path));
+    if (entry.width && entry.height) {
+      placed.push({
+        name: entry.fileName,
+        x: entry.x,
+        y: entry.y,
+        w: entry.width,
+        h: entry.height,
+      });
+    }
+  }
+  for (let i = 0; i < placed.length; i++) {
+    for (let j = i + 1; j < placed.length; j++) {
+      const a = placed[i]!;
+      const b = placed[j]!;
+      if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h) {
+        out.push({
+          severity: 'warning',
+          rule: 'world-overlap',
+          file,
+          where: `map ${b.name}`,
+          message: `overlaps ${a.name}`,
+        });
+      }
+    }
+  }
+  return out;
 }

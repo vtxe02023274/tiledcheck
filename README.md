@@ -20,7 +20,7 @@ tiles/walls.tsx: error: tileset 'walls' terrain set 'Walls': 255 colors, Tiled 1
 npx github:vtxe02023274/tiledcheck maps/
 ```
 
-可以給地圖、tileset（.tsx / .tsj）或資料夾，資料夾會往下找所有地圖。有錯誤時結束碼是 1。
+可以給地圖、tileset（.tsx / .tsj）、世界（.world，會檢查裡面列的每張地圖）或資料夾，資料夾會往下找所有地圖和世界。有錯誤時結束碼是 1。
 
 | 參數              | 作用                                           |
 | ----------------- | ---------------------------------------------- |
@@ -55,6 +55,7 @@ npx github:vtxe02023274/tiledcheck maps/
 | `duplicate-object-id` | 錯誤 | 兩個物件用了同一個 id                                                                           |
 | `next-object-id`      | 警告 | 物件 id 沒有小於地圖的 nextobjectid，Tiled 下次存檔可能重編                                     |
 | `object-outside-map`  | 警告 | 物件整個在地圖外（只檢查正交、非無限地圖）                                                      |
+| `world-overlap`       | 警告 | .world 裡兩張地圖的位置重疊                                                                     |
 
 支援 CSV、base64（無壓縮、zlib、gzip）、舊版 XML 圖塊資料、無限地圖的 chunk、群組圖層。舊檔案沒寫 `tilecount` 時，會照 Tiled 的算法從圖片尺寸推算；推不出來就延伸到下一個 tileset 的 firstgid。
 

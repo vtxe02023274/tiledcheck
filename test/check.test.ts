@@ -238,6 +238,32 @@ describe('problems', () => {
   });
 });
 
+describe('worlds', () => {
+  it('checks every map in a world and reports missing and overlapping maps', () => {
+    file(
+      'world/a.tmx',
+      tmx('<layer name="L" width="3" height="2"><data encoding="csv">9,0,0,0,0,0</data></layer>'),
+    );
+    file('world/b.tmx', tmx(''));
+    const world = file(
+      'world/test.world',
+      JSON.stringify({
+        type: 'world',
+        maps: [
+          { fileName: 'a.tmx', x: 0, y: 0, width: 48, height: 32 },
+          { fileName: 'b.tmx', x: 40, y: 0, width: 48, height: 32 },
+          { fileName: 'gone.tmx', x: 200, y: 0, width: 48, height: 32 },
+        ],
+      }),
+    );
+    expect(rules(checkFile(world))).toEqual([
+      "gid-out-of-range: layer 'L': gid 9 is not in any tileset (1 tile)",
+      'missing-file: map gone.tmx: gone.tmx does not exist',
+      'world-overlap: map b.tmx: overlaps a.tmx',
+    ]);
+  });
+});
+
 describe('cli', () => {
   it('walks folders, sets the exit code and can print JSON', () => {
     const sub = join(dir, 'cli');
