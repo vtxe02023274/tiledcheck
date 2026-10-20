@@ -13,6 +13,7 @@ recursively for maps.
 
 options:
   --json            print diagnostics as JSON
+  --github          print GitHub Actions annotations, so problems show on the PR
   --no-warnings     only report errors
   --ignore <rule>   skip a rule, can be repeated
   --rules           list the rules
@@ -46,6 +47,7 @@ export function run(
       allowPositionals: true,
       options: {
         json: { type: 'boolean' },
+        github: { type: 'boolean' },
         'no-warnings': { type: 'boolean' },
         ignore: { type: 'string', multiple: true },
         rules: { type: 'boolean' },
@@ -101,11 +103,23 @@ export function run(
   const errors = unique.filter((d) => d.severity === 'error').length;
   const warnings = unique.length - errors;
 
+  if (values.github) {
+    // https://docs.github.com/actions/reference/workflow-commands-for-github-actions
+    const escape = (v: string) =>
+      v.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+    const escapeProp = (v: string) => escape(v).replace(/:/g, '%3A').replace(/,/g, '%2C');
+    for (const d of unique) {
+      const path = relative(process.cwd(), d.file).replace(/\\/g, '/') || d.file;
+      write(
+        `::${d.severity} file=${escapeProp(path)},title=${escapeProp(d.rule)}::${escape(`${d.where}: ${d.message}`)}\n`,
+      );
+    }
+  }
   if (values.json) {
     write(
       `${JSON.stringify({ files: files.length, errors, warnings, diagnostics: unique }, null, 2)}\n`,
     );
-  } else {
+  } else if (!values.github) {
     for (const d of unique) {
       write(
         `${relative(process.cwd(), d.file) || d.file}: ${d.severity}: ${d.where}: ${d.message} [${d.rule}]\n`,

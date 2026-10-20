@@ -22,12 +22,13 @@ npx github:vtxe02023274/tiledcheck maps/
 
 可以給地圖、tileset（.tsx / .tsj）或資料夾，資料夾會往下找所有地圖。有錯誤時結束碼是 1。
 
-| 參數              | 作用                       |
-| ----------------- | -------------------------- |
-| `--json`          | 輸出 JSON                  |
-| `--no-warnings`   | 只報錯誤                   |
-| `--ignore <rule>` | 跳過某條規則，可以重複使用 |
-| `--rules`         | 列出所有規則               |
+| 參數              | 作用                                           |
+| ----------------- | ---------------------------------------------- |
+| `--json`          | 輸出 JSON                                      |
+| `--github`        | 輸出 GitHub Actions 註解，問題會直接標在 PR 上 |
+| `--no-warnings`   | 只報錯誤                                       |
+| `--ignore <rule>` | 跳過某條規則，可以重複使用                     |
+| `--rules`         | 列出所有規則                                   |
 
 放進 GitHub Actions：
 
@@ -35,7 +36,7 @@ npx github:vtxe02023274/tiledcheck maps/
 - uses: actions/setup-node@v5
   with:
     node-version: 22
-- run: npx github:vtxe02023274/tiledcheck maps/
+- run: npx github:vtxe02023274/tiledcheck --github maps/
 ```
 
 ## 規則

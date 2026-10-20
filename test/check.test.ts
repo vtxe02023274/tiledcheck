@@ -203,6 +203,15 @@ describe('cli', () => {
     expect(JSON.parse(out)).toMatchObject({ files: 2, errors: 0, diagnostics: [] });
   });
 
+  it('prints GitHub Actions annotations', () => {
+    const map = file('gh/a.tmx', tmx('<tileset firstgid="1" source="x,y.tsx"/>'));
+    let out = '';
+    expect(run([map, '--github'], (s) => (out += s))).toBe(1);
+    expect(out).toMatch(
+      /^::error file=.*a\.tmx,title=missing-file::tileset \(firstgid 1\): x,y\.tsx does not exist\n$/,
+    );
+  });
+
   it('rejects unknown rules and missing paths', () => {
     let out = '';
     expect(run(['x', '--ignore', 'nope'], (s) => (out += s))).toBe(2);

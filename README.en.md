@@ -22,12 +22,13 @@ npx github:vtxe02023274/tiledcheck maps/
 
 Pass maps, tilesets (.tsx / .tsj) or folders; folders are searched recursively for maps. The exit code is 1 when there is an error.
 
-| Option            | Effect                       |
-| ----------------- | ---------------------------- |
-| `--json`          | print JSON                   |
-| `--no-warnings`   | only report errors           |
-| `--ignore <rule>` | skip a rule, can be repeated |
-| `--rules`         | list the rules               |
+| Option            | Effect                                                      |
+| ----------------- | ----------------------------------------------------------- |
+| `--json`          | print JSON                                                  |
+| `--github`        | print GitHub Actions annotations so problems show on the PR |
+| `--no-warnings`   | only report errors                                          |
+| `--ignore <rule>` | skip a rule, can be repeated                                |
+| `--rules`         | list the rules                                              |
 
 In GitHub Actions:
 
@@ -35,7 +36,7 @@ In GitHub Actions:
 - uses: actions/setup-node@v5
   with:
     node-version: 22
-- run: npx github:vtxe02023274/tiledcheck maps/
+- run: npx github:vtxe02023274/tiledcheck --github maps/
 ```
 
 ## Rules
