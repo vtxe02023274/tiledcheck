@@ -3,7 +3,7 @@ import { extname } from 'node:path';
 import { imageSize } from './image.js';
 import { readFileSync } from 'node:fs';
 import { LoadError, loadMap, loadTileset, resolveRef } from './load.js';
-import { allLayers, GID_MASK, type TiledMap, type Tileset } from './model.js';
+import { allLayers, GID_MASK, type MapObject, type TiledMap, type Tileset } from './model.js';
 
 export type Severity = 'error' | 'warning';
 
@@ -201,13 +201,11 @@ export function checkMap(map: TiledMap): Diagnostic[] {
           if (o.template && !existsSync(resolveRef(map.file, o.template))) {
             report('error', 'missing-file', ow, `template ${o.template} does not exist`);
           }
+          const b = objectBounds(o);
           if (
             !map.infinite &&
             boundsKnown &&
-            (o.x + o.width < 0 ||
-              o.y + o.height < 0 ||
-              o.x - o.width > mapWidth ||
-              o.y - o.height > mapHeight)
+            (b.right < 0 || b.bottom < 0 || b.left > mapWidth || b.top > mapHeight)
           ) {
             report(
               'warning',
@@ -235,6 +233,37 @@ export function checkMap(map: TiledMap): Diagnostic[] {
     }
   }
   return out;
+}
+
+/**
+ * Pixel bounds of an object. Polygons and polylines span their points, tile
+ * objects sit on their position and reach up, other objects reach down.
+ * Rotation turns the shape clockwise around the position.
+ */
+function objectBounds(o: MapObject): { left: number; right: number; top: number; bottom: number } {
+  let corners = o.points?.length ? o.points : [];
+  if (!corners.length) {
+    const top = o.gid !== undefined ? -o.height : 0;
+    corners = [
+      { x: 0, y: top },
+      { x: o.width, y: top },
+      { x: 0, y: top + o.height },
+      { x: o.width, y: top + o.height },
+    ];
+  }
+  const a = (o.rotation * Math.PI) / 180;
+  const cos = Math.cos(a);
+  const sin = Math.sin(a);
+  // Rounded so a quarter turn does not leave an object a hair past an edge.
+  const round = (v: number) => Math.round(v * 1000) / 1000;
+  const xs = corners.map((p) => o.x + round(p.x * cos - p.y * sin));
+  const ys = corners.map((p) => o.y + round(p.x * sin + p.y * cos));
+  return {
+    left: Math.min(...xs),
+    right: Math.max(...xs),
+    top: Math.min(...ys),
+    bottom: Math.max(...ys),
+  };
 }
 
 function checkTileset(ts: Tileset, where: string, push: (d: Diagnostic) => void): void {

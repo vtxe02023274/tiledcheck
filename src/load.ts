@@ -230,6 +230,8 @@ function objectFromJson(o: any): MapObject {
     y: num(o.y),
     width: num(o.width),
     height: num(o.height),
+    rotation: num(o.rotation),
+    points: (o.polygon ?? o.polyline)?.map((p: any) => ({ x: num(p.x), y: num(p.y) })),
   };
 }
 
@@ -332,6 +334,8 @@ function layersFromXml(parent: any, infinite: boolean): Layer[] {
         y: num(o.y),
         width: num(o.width),
         height: num(o.height),
+        rotation: num(o.rotation),
+        points: pointsFromXml((o.polygon ?? o.polyline)?.points),
       })),
     });
   }
@@ -342,6 +346,18 @@ function layersFromXml(parent: any, infinite: boolean): Layer[] {
     layers.push({ ...base(g), kind: 'group', layers: layersFromXml(g, infinite) });
   }
   return layers;
+}
+
+function pointsFromXml(points: unknown): { x: number; y: number }[] | undefined {
+  if (typeof points !== 'string') return undefined;
+  return points
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((p) => {
+      const [x, y] = p.split(',');
+      return { x: num(x), y: num(y) };
+    });
 }
 
 function text(node: any): string {

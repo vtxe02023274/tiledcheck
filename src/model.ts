@@ -72,6 +72,10 @@ export interface MapObject {
   y: number;
   width: number;
   height: number;
+  /** Degrees clockwise around x and y. */
+  rotation: number;
+  /** Polygon or polyline points, relative to x and y. */
+  points?: { x: number; y: number }[];
 }
 
 export interface ObjectLayer extends LayerBase {
