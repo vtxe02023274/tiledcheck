@@ -205,6 +205,65 @@ describe('problems', () => {
     ]);
   });
 
+  it('uses the real bounds of polylines, tile objects and rectangles past the edges', () => {
+    // 10x10 tiles of 16 px: the map is 160x160 px.
+    const map = file(
+      'bounds.tmx',
+      `<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" orientation="orthogonal" width="10" height="10" tilewidth="16" tileheight="16" infinite="0" nextobjectid="10">
+<tileset firstgid="1" source="tiles.tsx"/>
+<objectgroup id="1" name="O">
+ <object id="1" x="-40" y="80"><polyline points="0,0 120,0 200,40"/></object>
+ <object id="2" x="165" y="0" width="30" height="30"/>
+ <object id="3" x="0" y="170" width="30" height="30"/>
+ <object id="4" gid="1" x="0" y="170" width="16" height="16"/>
+ <object id="5" gid="1" x="0" y="-5" width="16" height="16"/>
+ <object id="6" x="200" y="0"><polygon points="0,0 -60,10 -50,20"/></object>
+ <object id="7" x="165" y="0" width="40" height="10" rotation="90"/>
+</objectgroup>
+</map>`,
+    );
+    expect(rules(checkFile(map))).toEqual([
+      "object-outside-map: layer 'O' object 2: at (165, 0), the map is 160x160 px",
+      "object-outside-map: layer 'O' object 3: at (0, 170), the map is 160x160 px",
+      "object-outside-map: layer 'O' object 5: at (0, -5), the map is 160x160 px",
+    ]);
+
+    const json = file(
+      'bounds.tmj',
+      JSON.stringify({
+        type: 'map',
+        orientation: 'orthogonal',
+        width: 10,
+        height: 10,
+        tilewidth: 16,
+        tileheight: 16,
+        tilesets: [],
+        layers: [
+          {
+            type: 'objectgroup',
+            name: 'O',
+            objects: [
+              {
+                id: 1,
+                x: -40,
+                y: 80,
+                polyline: [
+                  { x: 0, y: 0 },
+                  { x: 120, y: 0 },
+                ],
+              },
+              { id: 2, x: 165, y: 0, width: 30, height: 30 },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(rules(checkFile(json))).toEqual([
+      "object-outside-map: layer 'O' object 2: at (165, 0), the map is 160x160 px",
+    ]);
+  });
+
   it('uses the unrotated grid for objects on isometric maps', () => {
     // 4x4 tiles of 64x32: isometric object positions go up to 4 * 32 on both axes.
     const map = file(
