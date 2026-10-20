@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+out/
+*.log
+public/client.js*
+site/

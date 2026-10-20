@@ -1,0 +1,49 @@
+{
+  "name": "tiledcheck",
+  "version": "0.1.0",
+  "description": "Check Tiled maps for broken references, out of range tiles and other problems before they reach your game.",
+  "keywords": [
+    "tiled",
+    "tmx",
+    "tmj",
+    "tilemap",
+    "lint",
+    "gamedev"
+  ],
+  "license": "MIT",
+  "author": "冷牛",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vtxe02023274/tiledcheck.git"
+  },
+  "type": "module",
+  "bin": {
+    "tiledcheck": "dist/bin.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "prepare": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.11.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^20.19.43",
+    "eslint": "^9.39.5",
+    "prettier": "^3.9.10",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^4.1.12"
+  }
+}
