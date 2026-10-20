@@ -148,6 +148,23 @@ describe('problems', () => {
     ]);
   });
 
+  it('warns when a tileset image is not the size the tileset says', () => {
+    const png = Buffer.alloc(33);
+    png.writeUInt32BE(0x89504e47, 0);
+    png.write('IHDR', 12, 'ascii');
+    png.writeUInt32BE(48, 16);
+    png.writeUInt32BE(32, 20);
+    file('resized.png', png);
+    const map = file(
+      'resized.tmx',
+      tmx(`<tileset firstgid="1" name="r" tilewidth="16" tileheight="16" tilecount="4" columns="2">
+  <image source="resized.png" width="32" height="32"/></tileset>`),
+    );
+    expect(checkFile(map).map((d) => `${d.severity} ${d.rule}: ${d.message}`)).toEqual([
+      'warning image-size: resized.png is 48x32 but the tileset says 32x32, open and save the tileset in Tiled to update it',
+    ]);
+  });
+
   it('reports terrain sets with more colors than Tiled loads', () => {
     const colors = Array.from(
       { length: 255 },

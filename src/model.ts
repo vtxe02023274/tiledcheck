@@ -30,6 +30,9 @@ export interface Tileset {
   /** Undefined when the file does not say and the image size is unknown. */
   tileCount?: number;
   image?: string;
+  /** Image size as written in the tileset, to compare against the real file. */
+  imageWidth?: number;
+  imageHeight?: number;
   /** Image per tile, for collection of images tilesets. */
   tileImages: { id: number; image: string }[];
   wangSets: WangSet[];

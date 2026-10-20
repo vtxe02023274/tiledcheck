@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { extname } from 'node:path';
+import { imageSize } from './image.js';
 import { LoadError, loadMap, loadTileset, resolveRef } from './load.js';
 import { allLayers, GID_MASK, type TiledMap, type Tileset } from './model.js';
 
@@ -20,6 +21,7 @@ export const MAX_TERRAIN_COLORS = 254;
 export const RULES: Record<string, string> = {
   'load-error': 'The file cannot be read or parsed',
   'missing-file': 'An external tileset, image or template does not exist',
+  'image-size': 'A tileset image is not the size the tileset says, so tile ids shift',
   'gid-out-of-range': 'A tile refers to a gid that no tileset covers',
   'tileset-overlap': 'Two tilesets claim the same gid range',
   'terrain-colors': 'A terrain set has more colors than Tiled can load',
@@ -208,10 +210,23 @@ export function checkMap(map: TiledMap): Diagnostic[] {
 }
 
 function checkTileset(ts: Tileset, where: string, push: (d: Diagnostic) => void): void {
-  const report = (rule: string, at: string, message: string) =>
-    push({ severity: 'error', rule, file: ts.file, where: at, message });
-  if (ts.image && !existsSync(resolveRef(ts.file, ts.image))) {
-    report('missing-file', where, `image ${ts.image} does not exist`);
+  const report = (rule: string, at: string, message: string, severity: Severity = 'error') =>
+    push({ severity, rule, file: ts.file, where: at, message });
+  if (ts.image) {
+    const path = resolveRef(ts.file, ts.image);
+    if (!existsSync(path)) {
+      report('missing-file', where, `image ${ts.image} does not exist`);
+    } else if (ts.imageWidth && ts.imageHeight) {
+      const real = imageSize(path);
+      if (real && (real.width !== ts.imageWidth || real.height !== ts.imageHeight)) {
+        report(
+          'image-size',
+          where,
+          `${ts.image} is ${real.width}x${real.height} but the tileset says ${ts.imageWidth}x${ts.imageHeight}, open and save the tileset in Tiled to update it`,
+          'warning',
+        );
+      }
+    }
   }
   for (const t of ts.tileImages) {
     if (!existsSync(resolveRef(ts.file, t.image))) {

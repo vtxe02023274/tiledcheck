@@ -45,6 +45,7 @@ In GitHub Actions:
 | --------------------- | ------- | -------------------------------------------------------------------------------------------------- |
 | `load-error`          | error   | The file cannot be read or parsed                                                                  |
 | `missing-file`        | error   | An external tileset, image, image layer image or object template is missing                        |
+| `image-size`          | warning | A tileset image is not the size the tileset says, so tile ids shift (PNG, GIF, BMP, JPEG)          |
 | `gid-out-of-range`    | error   | A tile or object gid is not in any tileset (flip flags are removed first)                          |
 | `tileset-overlap`     | error   | Two tilesets claim the same gids                                                                   |
 | `terrain-colors`      | error   | A terrain set has more than 254 colors; since Tiled 1.10.2 none of the tileset's terrain sets load |

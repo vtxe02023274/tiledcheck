@@ -158,6 +158,8 @@ function tilesetFromJson(file: string, t: any): Tileset {
       t.spacing,
     ),
     image: t.image,
+    imageWidth: t.imagewidth === undefined ? undefined : num(t.imagewidth),
+    imageHeight: t.imageheight === undefined ? undefined : num(t.imageheight),
     tileImages: (t.tiles ?? [])
       .filter((tile: any) => tile.image)
       .map((tile: any) => ({ id: num(tile.id), image: tile.image })),
@@ -258,6 +260,8 @@ function tilesetFromXml(file: string, t: any): Tileset {
       t.spacing,
     ),
     image: t.image?.source,
+    imageWidth: t.image?.width === undefined ? undefined : num(t.image.width),
+    imageHeight: t.image?.height === undefined ? undefined : num(t.image.height),
     tileImages: (t.tile ?? [])
       .filter((tile: any) => tile.image?.source)
       .map((tile: any) => ({ id: num(tile.id), image: tile.image.source })),
