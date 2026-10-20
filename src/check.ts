@@ -155,7 +155,7 @@ export function checkMap(map: TiledMap): Diagnostic[] {
             'error',
             'gid-out-of-range',
             where,
-            `gid ${gid} is not in any tileset (${count} tile${count > 1 ? 's' : ''})`,
+            `gid ${gid} is not in any tileset, used in ${count} cell${count > 1 ? 's' : ''}`,
           );
         }
         break;

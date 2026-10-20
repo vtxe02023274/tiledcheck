@@ -7,7 +7,7 @@
 ```
 $ tiledcheck maps/
 maps/town.tmx: error: tileset (firstgid 1): ../tiles/town.tsx does not exist [missing-file]
-maps/town.tmx: error: layer 'Ground': gid 97 is not in any tileset (12 tiles) [gid-out-of-range]
+maps/town.tmx: error: layer 'Ground': gid 97 is not in any tileset, used in 12 cells [gid-out-of-range]
 tiles/walls.tsx: error: tileset 'walls' terrain set 'Walls': 255 colors, Tiled 1.10.2+ supports 254 and silently drops every terrain set of this tileset [terrain-colors]
 3 files checked, 3 errors, 0 warnings
 ```
@@ -30,13 +30,15 @@ npx github:vtxe02023274/tiledcheck maps/
 | `--ignore <rule>` | 跳過某條規則，可以重複使用                     |
 | `--rules`         | 列出所有規則                                   |
 
-放進 GitHub Actions：
+放進 GitHub Actions，問題會直接標在 PR 上：
 
 ```yaml
-- uses: actions/setup-node@v5
+- uses: actions/checkout@v5
+- uses: vtxe02023274/tiledcheck@main
   with:
-    node-version: 22
-- run: npx github:vtxe02023274/tiledcheck --github maps/
+    path: maps/ worlds/main.world
+    # warnings: false
+    # ignore: image-size missing-image
 ```
 
 ## 規則

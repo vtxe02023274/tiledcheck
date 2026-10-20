@@ -7,7 +7,7 @@ Checks Tiled maps (.tmx / .tmj) for problems that break things in your game: til
 ```
 $ tiledcheck maps/
 maps/town.tmx: error: tileset (firstgid 1): ../tiles/town.tsx does not exist [missing-file]
-maps/town.tmx: error: layer 'Ground': gid 97 is not in any tileset (12 tiles) [gid-out-of-range]
+maps/town.tmx: error: layer 'Ground': gid 97 is not in any tileset, used in 12 cells [gid-out-of-range]
 tiles/walls.tsx: error: tileset 'walls' terrain set 'Walls': 255 colors, Tiled 1.10.2+ supports 254 and silently drops every terrain set of this tileset [terrain-colors]
 3 files checked, 3 errors, 0 warnings
 ```
@@ -30,13 +30,15 @@ Pass maps, tilesets (.tsx / .tsj), worlds (.world, which checks every map they l
 | `--ignore <rule>` | skip a rule, can be repeated                                |
 | `--rules`         | list the rules                                              |
 
-In GitHub Actions:
+In GitHub Actions, problems show up as annotations on the PR:
 
 ```yaml
-- uses: actions/setup-node@v5
+- uses: actions/checkout@v5
+- uses: vtxe02023274/tiledcheck@main
   with:
-    node-version: 22
-- run: npx github:vtxe02023274/tiledcheck --github maps/
+    path: maps/ worlds/main.world
+    # warnings: false
+    # ignore: image-size missing-image
 ```
 
 ## Rules

@@ -111,7 +111,7 @@ describe('clean maps', () => {
     );
     // (35 - 2 + 1) / 17 = 2 columns, (18 - 2 + 1) / 17 = 1 row: gid 3 is out of range.
     expect(rules(checkFile(map))).toEqual([
-      "gid-out-of-range: layer 'L': gid 3 is not in any tileset (1 tile)",
+      "gid-out-of-range: layer 'L': gid 3 is not in any tileset, used in 1 cell",
     ]);
   });
 });
@@ -141,8 +141,8 @@ describe('problems', () => {
  <objectgroup name="O"><object id="3" gid="7" x="0" y="16" width="16" height="16"/></objectgroup>`),
     );
     expect(rules(checkFile(map))).toEqual([
-      "gid-out-of-range: layer 'Ground': gid 5 is not in any tileset (2 tiles)",
-      "gid-out-of-range: layer 'Ground': gid 9 is not in any tileset (1 tile)",
+      "gid-out-of-range: layer 'Ground': gid 5 is not in any tileset, used in 2 cells",
+      "gid-out-of-range: layer 'Ground': gid 9 is not in any tileset, used in 1 cell",
       "gid-out-of-range: layer 'O' object 3: gid 7 is not in any tileset",
     ]);
   });
@@ -257,7 +257,7 @@ describe('worlds', () => {
       }),
     );
     expect(rules(checkFile(world))).toEqual([
-      "gid-out-of-range: layer 'L': gid 9 is not in any tileset (1 tile)",
+      "gid-out-of-range: layer 'L': gid 9 is not in any tileset, used in 1 cell",
       'missing-file: map gone.tmx: gone.tmx does not exist',
       'world-overlap: map b.tmx: overlaps a.tmx',
     ]);

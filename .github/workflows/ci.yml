@@ -28,3 +28,26 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm test
+
+  action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Write sample maps
+        run: |
+          mkdir -p sample/ok sample/bad
+          map='{"type":"map","width":2,"height":1,"tilewidth":8,"tileheight":8,"orientation":"orthogonal","infinite":false,"nextlayerid":2,"nextobjectid":1,"layers":[{"id":1,"name":"Ground","type":"tilelayer","width":2,"height":1,"x":0,"y":0,"visible":true,"opacity":1,"data":[1,GID]}],"tilesets":[{"firstgid":1,"name":"t","tilewidth":8,"tileheight":8,"tilecount":2,"columns":2,"image":"t.png","imagewidth":16,"imageheight":8}]}'
+          echo "${map/GID/2}" > sample/ok/a.tmj
+          echo "${map/GID/9}" > sample/bad/a.tmj
+      - uses: ./
+        with:
+          path: sample/ok
+          ignore: missing-image
+      - id: bad
+        uses: ./
+        continue-on-error: true
+        with:
+          path: sample/bad
+          ignore: missing-image
+      - name: Bad map must fail
+        run: test "${{ steps.bad.outcome }}" = failure

@@ -1,0 +1,39 @@
+name: tiledcheck
+description: Check Tiled maps for broken references, out of range tiles and other problems
+branding:
+  icon: map
+  color: green
+
+inputs:
+  path:
+    description: Maps, tilesets, worlds or folders to check, separated by spaces
+    default: .
+  warnings:
+    description: Report warnings as well as errors
+    default: 'true'
+  ignore:
+    description: Rules to skip, separated by spaces
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v5
+      with:
+        node-version: 22
+    - name: Build tiledcheck
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: npm ci --no-audit --no-fund --loglevel=error && npm run build
+    - name: Check maps
+      shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_WARNINGS: ${{ inputs.warnings }}
+        INPUT_IGNORE: ${{ inputs.ignore }}
+      run: |
+        args=(--github)
+        [ "$INPUT_WARNINGS" = true ] || args+=(--no-warnings)
+        for rule in $INPUT_IGNORE; do args+=(--ignore "$rule"); done
+        read -ra paths <<< "$INPUT_PATH"
+        node "$GITHUB_ACTION_PATH/dist/bin.js" "${args[@]}" "${paths[@]}"
