@@ -1,5 +1,5 @@
 import { readdirSync, statSync } from 'node:fs';
-import { extname, join, relative } from 'node:path';
+import { extname, join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { checkFile, RULES, type Diagnostic } from './check.js';
 
@@ -91,10 +91,11 @@ export function run(
     .flatMap((f) => checkFile(f))
     .filter((d) => !ignored.has(d.rule) && !(values['no-warnings'] && d.severity === 'warning'));
 
-  // The same tileset problem shows up once per map that uses it; report it once.
+  // The same tileset problem shows up once per map that uses it, and a map
+  // can be reached both from a folder and from a world; report it once.
   const seen = new Set<string>();
   const unique = diagnostics.filter((d) => {
-    const key = `${d.file}\0${d.where}\0${d.rule}\0${d.message}`;
+    const key = `${resolve(d.file)}\0${d.where}\0${d.rule}\0${d.message}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import * as zlib from 'node:zlib';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { checkFile, type Diagnostic } from '../src/check.js';
@@ -349,6 +349,22 @@ describe('cli', () => {
     out = '';
     expect(run([sub, '--json', '--ignore', 'load-error'], (s) => (out += s))).toBe(0);
     expect(JSON.parse(out)).toMatchObject({ files: 2, errors: 0, diagnostics: [] });
+  });
+
+  it('reports a problem once when a folder holds a world and its maps', () => {
+    file(
+      'cli-world/a.tmx',
+      tmx('<layer name="L" width="3" height="2"><data encoding="csv">9,0,0,0,0,0</data></layer>'),
+    );
+    file(
+      'cli-world/w.world',
+      JSON.stringify({ type: 'world', maps: [{ fileName: 'a.tmx', x: 0, y: 0 }] }),
+    );
+    let out = '';
+    expect(
+      run([relative(process.cwd(), join(dir, 'cli-world')), '--json'], (s) => (out += s)),
+    ).toBe(1);
+    expect(JSON.parse(out)).toMatchObject({ files: 2, errors: 1 });
   });
 
   it('prints GitHub Actions annotations', () => {
