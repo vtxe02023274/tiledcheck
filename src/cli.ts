@@ -9,7 +9,7 @@ const HELP = `usage: tiledcheck [options] <map or folder>...
 
 Checks Tiled maps (.tmx, .tmj) and the tilesets, images and templates they use.
 Tileset files (.tsx, .tsj) can be checked on their own, and worlds (.world)
-check every map they list. Folders are searched recursively for maps and worlds.
+check every map they list or match. Folders are searched recursively for maps and worlds.
 
 options:
   --json            print diagnostics as JSON

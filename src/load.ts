@@ -5,6 +5,7 @@ import { XMLParser } from 'fast-xml-parser';
 import type {
   Layer,
   MapObject,
+  Template,
   TiledMap,
   Tileset,
   TilesetRef,
@@ -70,6 +71,26 @@ export function loadTileset(file: string): Tileset {
   const ts = doc.tileset?.[0];
   if (!ts) throw new LoadError('no <tileset> element');
   return tilesetFromXml(file, ts);
+}
+
+export function loadTemplate(file: string): Template {
+  const text = readText(file);
+  if (isJson(file)) {
+    const j = parseJson(text);
+    if (j?.type !== 'template') throw new LoadError('not a Tiled JSON template');
+    return templateOf(file, j.tileset, j.object);
+  }
+  const doc = xml.parse(text);
+  if (doc.template === undefined) throw new LoadError('no <template> element');
+  return templateOf(file, doc.template?.tileset?.[0], doc.template?.object?.[0]);
+}
+
+function templateOf(file: string, tileset: any, object: any): Template {
+  return {
+    file,
+    tileset: tileset ? { firstGid: num(tileset.firstgid), source: tileset.source } : undefined,
+    gid: object?.gid === undefined ? undefined : num(object.gid),
+  };
 }
 
 function parseJson(text: string): any {

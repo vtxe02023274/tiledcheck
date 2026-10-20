@@ -1,9 +1,16 @@
-import { existsSync } from 'node:fs';
-import { extname } from 'node:path';
+import { existsSync, readdirSync } from 'node:fs';
+import { dirname, extname } from 'node:path';
 import { imageSize } from './image.js';
 import { readFileSync } from 'node:fs';
-import { LoadError, loadMap, loadTileset, resolveRef } from './load.js';
-import { allLayers, GID_MASK, type MapObject, type TiledMap, type Tileset } from './model.js';
+import { LoadError, loadMap, loadTemplate, loadTileset, resolveRef } from './load.js';
+import {
+  allLayers,
+  GID_MASK,
+  type MapObject,
+  type Template,
+  type TiledMap,
+  type Tileset,
+} from './model.js';
 
 export type Severity = 'error' | 'warning';
 
@@ -120,6 +127,27 @@ export function checkMap(map: TiledMap): Diagnostic[] {
   const used = new Set<number>();
   let usageKnown = true;
   const objectIds = new Map<number, string>();
+  // A template is often placed many times; load and check it once.
+  const templates = new Map<string, Template | undefined>();
+  const loadTemplateOnce = (path: string): Template | undefined => {
+    if (templates.has(path)) return templates.get(path);
+    let t: Template | undefined;
+    try {
+      t = loadTemplate(path);
+      checkTemplateTileset(t, (d) => out.push(d));
+    } catch (err) {
+      report('error', 'load-error', 'file', (err as Error).message, path);
+    }
+    templates.set(path, t);
+    return t;
+  };
+  // The gid a template's tile object has in this map, through the same tileset file.
+  const templateGid = (t: Template): number | undefined => {
+    if (t.gid === undefined || !t.tileset?.source) return undefined;
+    const source = resolveRef(t.file, t.tileset.source);
+    const ref = map.tilesets.find((r) => r.source && resolveRef(map.file, r.source) === source);
+    return ref && ref.firstGid + (t.gid & GID_MASK) - t.tileset.firstGid;
+  };
   // Isometric maps store object positions on the unrotated grid, where a
   // tile is tileHeight wide on both axes.
   const isometric = map.orientation === 'isometric';
@@ -188,8 +216,6 @@ export function checkMap(map: TiledMap): Diagnostic[] {
             );
           }
           if (o.gid !== undefined) used.add(o.gid & GID_MASK);
-          // A template can bring its own tileset, so it may use one the map lists.
-          if (o.template) usageKnown = false;
           if (o.gid !== undefined && o.gid & GID_MASK && !covered(o.gid & GID_MASK)) {
             report(
               'error',
@@ -198,8 +224,18 @@ export function checkMap(map: TiledMap): Diagnostic[] {
               `gid ${o.gid & GID_MASK} is not in any tileset`,
             );
           }
-          if (o.template && !existsSync(resolveRef(map.file, o.template))) {
-            report('error', 'missing-file', ow, `template ${o.template} does not exist`);
+          if (o.template) {
+            const path = resolveRef(map.file, o.template);
+            if (!existsSync(path)) {
+              report('error', 'missing-file', ow, `template ${o.template} does not exist`);
+            }
+            const t = existsSync(path) ? loadTemplateOnce(path) : undefined;
+            // A template that cannot be read may bring a tile from any tileset.
+            if (!t) usageKnown = false;
+            else if (o.gid === undefined) {
+              const gid = templateGid(t);
+              if (gid) used.add(gid);
+            }
           }
           const b = objectBounds(o);
           if (
@@ -266,6 +302,29 @@ function objectBounds(o: MapObject): { left: number; right: number; top: number;
   };
 }
 
+function checkTemplateTileset(t: Template, push: (d: Diagnostic) => void): void {
+  if (!t.tileset?.source) return;
+  const { firstGid, source } = t.tileset;
+  const path = resolveRef(t.file, source);
+  const report = (rule: string, message: string) =>
+    push({
+      severity: 'error',
+      rule,
+      file: t.file,
+      where: `tileset (firstgid ${firstGid})`,
+      message,
+    });
+  if (!existsSync(path)) {
+    report('missing-file', `${source} does not exist`);
+    return;
+  }
+  try {
+    loadTileset(path);
+  } catch {
+    report('load-error', `cannot load ${source}`);
+  }
+}
+
 function checkTileset(ts: Tileset, where: string, push: (d: Diagnostic) => void): void {
   const report = (rule: string, at: string, message: string, severity: Severity = 'error') =>
     push({ severity, rule, file: ts.file, where: at, message });
@@ -301,13 +360,26 @@ function checkTileset(ts: Tileset, where: string, push: (d: Diagnostic) => void)
   }
 }
 
+/** Files a world pattern can match; Tiled matches its regexp against every file in the folder. */
+const PATTERN_MAP_EXTENSIONS = new Set(['.tmx', '.tmj', '.json']);
+
 /**
- * A world lists maps and where they sit. Every map in it is checked, and
- * maps that do not exist or overlap each other are reported.
+ * A world lists maps and where they sit, or patterns that match map file
+ * names in its folder. Every map in it is checked, and maps that do not
+ * exist or overlap each other are reported.
  */
 function checkWorld(file: string): Diagnostic[] {
   let world: {
     maps?: { fileName: string; x: number; y: number; width?: number; height?: number }[];
+    patterns?: {
+      regexp: string;
+      multiplierX?: number;
+      multiplierY?: number;
+      offsetX?: number;
+      offsetY?: number;
+      mapWidth?: number;
+      mapHeight?: number;
+    }[];
   };
   try {
     world = JSON.parse(readFileSync(file, 'utf8'));
@@ -324,6 +396,12 @@ function checkWorld(file: string): Diagnostic[] {
   }
   const out: Diagnostic[] = [];
   const placed: { name: string; x: number; y: number; w: number; h: number }[] = [];
+  const checked = new Set<string>();
+  const checkOnce = (path: string) => {
+    if (checked.has(path)) return;
+    checked.add(path);
+    out.push(...checkFile(path));
+  };
   for (const entry of world.maps ?? []) {
     const path = resolveRef(file, entry.fileName);
     if (!existsSync(path)) {
@@ -336,7 +414,7 @@ function checkWorld(file: string): Diagnostic[] {
       });
       continue;
     }
-    out.push(...checkFile(path));
+    checkOnce(path);
     if (entry.width && entry.height) {
       placed.push({
         name: entry.fileName,
@@ -344,6 +422,52 @@ function checkWorld(file: string): Diagnostic[] {
         y: entry.y,
         w: entry.width,
         h: entry.height,
+      });
+    }
+  }
+  const names = world.patterns?.length
+    ? readdirSync(dirname(file), { withFileTypes: true })
+        .filter((e) => e.isFile() && PATTERN_MAP_EXTENSIONS.has(extname(e.name).toLowerCase()))
+        .map((e) => e.name)
+    : [];
+  for (const pattern of world.patterns ?? []) {
+    const where = `pattern ${pattern.regexp}`;
+    let regexp: RegExp;
+    try {
+      regexp = new RegExp(pattern.regexp);
+    } catch (err) {
+      out.push({
+        severity: 'error',
+        rule: 'load-error',
+        file,
+        where,
+        message: (err as Error).message,
+      });
+      continue;
+    }
+    let matched = false;
+    for (const name of names) {
+      const match = regexp.exec(name);
+      if (!match) continue;
+      matched = true;
+      checkOnce(resolveRef(file, name));
+      if (pattern.mapWidth && pattern.mapHeight) {
+        placed.push({
+          name,
+          x: (Number(match[1]) || 0) * (pattern.multiplierX ?? 1) + (pattern.offsetX ?? 0),
+          y: (Number(match[2]) || 0) * (pattern.multiplierY ?? 1) + (pattern.offsetY ?? 0),
+          w: pattern.mapWidth,
+          h: pattern.mapHeight,
+        });
+      }
+    }
+    if (!matched) {
+      out.push({
+        severity: 'error',
+        rule: 'missing-file',
+        file,
+        where,
+        message: 'no file in the folder of the world matches it',
       });
     }
   }
