@@ -36,10 +36,15 @@ npx github:vtxe02023274/tiledcheck maps/
 - uses: actions/checkout@v5
 - uses: vtxe02023274/tiledcheck@main
   with:
-    path: maps/ worlds/main.world
+    path: |
+      maps/
+      worlds/main.world
+      levels/**/*.tmx
     # warnings: false
     # ignore: image-size missing-image
 ```
+
+`path` 一行寫一個路徑或 glob（支援 `**`），路徑可以有空格。`ignore` 用空格分隔。
 
 ## 規則
 
