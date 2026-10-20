@@ -77,6 +77,20 @@ describe('clean maps', () => {
     expect(rules(checkFile(map))).toEqual([]);
   });
 
+  it('reads XML format chunks on an infinite map', () => {
+    const map = file(
+      'infinite-xml.tmx',
+      tmx(
+        `<tileset firstgid="1" source="tiles.tsx"/>
+ <layer id="1" name="Ground" width="2" height="1"><data><chunk x="0" y="0" width="2" height="1"><tile gid="1"/><tile gid="99"/></chunk></data></layer>`,
+        ' infinite="1"',
+      ).replace(' infinite="0"', ''),
+    );
+    expect(rules(checkFile(map))).toEqual([
+      "gid-out-of-range: layer 'Ground': gid 99 is not in any tileset, used in 1 cell",
+    ]);
+  });
+
   it('reads old JSON maps that keep tiles in an object keyed by id', () => {
     const map = file(
       'old-json.json',
