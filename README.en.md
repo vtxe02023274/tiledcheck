@@ -36,10 +36,15 @@ In GitHub Actions, problems show up as annotations on the PR:
 - uses: actions/checkout@v5
 - uses: vtxe02023274/tiledcheck@main
   with:
-    path: maps/ worlds/main.world
+    path: |
+      maps/
+      worlds/main.world
+      levels/**/*.tmx
     # warnings: false
     # ignore: image-size missing-image
 ```
+
+`path` takes one path or glob per line (`**` is supported), and paths may contain spaces. `ignore` is separated by spaces.
 
 ## Rules
 

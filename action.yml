@@ -6,7 +6,7 @@ branding:
 
 inputs:
   path:
-    description: Maps, tilesets, worlds or folders to check, separated by spaces
+    description: Maps, tilesets, worlds or folders to check, one path or glob per line
     default: .
   warnings:
     description: Report warnings as well as errors
@@ -35,5 +35,16 @@ runs:
         args=(--github)
         [ "$INPUT_WARNINGS" = true ] || args+=(--no-warnings)
         for rule in $INPUT_IGNORE; do args+=(--ignore "$rule"); done
-        read -ra paths <<< "$INPUT_PATH"
+        # One path or glob per line; a glob that matches nothing is passed on
+        # as is, so tiledcheck reports it as missing.
+        shopt -s globstar
+        paths=()
+        while IFS= read -r line; do
+          line="${line#"${line%%[![:space:]]*}"}"
+          line="${line%"${line##*[![:space:]]}"}"
+          [ -n "$line" ] || continue
+          # Unquoted so globs expand; with IFS empty, spaces do not split it.
+          IFS= matches=($line)
+          paths+=("${matches[@]}")
+        done <<< "$INPUT_PATH"
         node "$GITHUB_ACTION_PATH/dist/bin.js" "${args[@]}" "${paths[@]}"
