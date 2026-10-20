@@ -10,8 +10,12 @@
     "lint",
     "gamedev"
   ],
+  "homepage": "https://github.com/vtxe02023274/tiledcheck#readme",
+  "bugs": {
+    "url": "https://github.com/vtxe02023274/tiledcheck/issues"
+  },
   "license": "MIT",
-  "author": "冷牛",
+  "author": "Leng Niu",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vtxe02023274/tiledcheck.git"
@@ -32,7 +36,8 @@
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "prepare": "tsc -p tsconfig.build.json"
+    "prepare": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "tsc -p tsconfig.build.json && npm test"
   },
   "dependencies": {
     "fast-xml-parser": "^5.11.2"

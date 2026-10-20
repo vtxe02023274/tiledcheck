@@ -17,7 +17,7 @@ tiles/walls.tsx: error: tileset 'walls' terrain set 'Walls': 255 colors, Tiled 1
 需要 Node.js 20 以上。
 
 ```sh
-npx github:vtxe02023274/tiledcheck maps/
+npx tiledcheck maps/
 ```
 
 可以給地圖、tileset（.tsx / .tsj）、世界（.world，會檢查裡面列的每張地圖，用 patterns 的世界則檢查同資料夾裡符合正規表示式的地圖）或資料夾，資料夾會往下找所有地圖和世界。有錯誤時結束碼是 1。

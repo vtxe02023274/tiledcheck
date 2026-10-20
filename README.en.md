@@ -17,7 +17,7 @@ tiles/walls.tsx: error: tileset 'walls' terrain set 'Walls': 255 colors, Tiled 1
 Requires Node.js 20 or later.
 
 ```sh
-npx github:vtxe02023274/tiledcheck maps/
+npx tiledcheck maps/
 ```
 
 Pass maps, tilesets (.tsx / .tsj), worlds (.world, which checks every map they list, or the maps in their folder that match their patterns) or folders; folders are searched recursively for maps and worlds. The exit code is 1 when there is an error.
