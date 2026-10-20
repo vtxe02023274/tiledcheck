@@ -120,7 +120,11 @@ export function checkMap(map: TiledMap): Diagnostic[] {
   const used = new Set<number>();
   let usageKnown = true;
   const objectIds = new Map<number, string>();
-  const mapWidth = map.width * map.tileWidth;
+  // Isometric maps store object positions on the unrotated grid, where a
+  // tile is tileHeight wide on both axes.
+  const isometric = map.orientation === 'isometric';
+  const boundsKnown = map.orientation === 'orthogonal' || isometric;
+  const mapWidth = map.width * (isometric ? map.tileHeight : map.tileWidth);
   const mapHeight = map.height * map.tileHeight;
 
   for (const { layer, path } of allLayers(map.layers)) {
@@ -199,7 +203,7 @@ export function checkMap(map: TiledMap): Diagnostic[] {
           }
           if (
             !map.infinite &&
-            map.orientation === 'orthogonal' &&
+            boundsKnown &&
             (o.x + o.width < 0 ||
               o.y + o.height < 0 ||
               o.x - o.width > mapWidth ||

@@ -56,7 +56,7 @@ In GitHub Actions, problems show up as annotations on the PR:
 | `tile-data`           | error   | Tile data cannot be decoded (zstd only warns, since it is not checked)                                                                                  |
 | `duplicate-object-id` | error   | Two objects share an id                                                                                                                                 |
 | `next-object-id`      | warning | An object id is not below the map's nextobjectid, so Tiled may renumber it                                                                              |
-| `object-outside-map`  | warning | An object is entirely outside the map (orthogonal, finite maps only)                                                                                    |
+| `object-outside-map`  | warning | An object is entirely outside the map (orthogonal and isometric finite maps only)                                                                       |
 | `world-overlap`       | warning | Two maps in a .world are placed on top of each other                                                                                                    |
 | `unused-tileset`      | warning | No tile or object in the map uses the tileset, engines that load every listed tileset still load its image (skipped when the map uses object templates) |
 

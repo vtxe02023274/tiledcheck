@@ -191,6 +191,20 @@ describe('problems', () => {
     ]);
   });
 
+  it('uses the unrotated grid for objects on isometric maps', () => {
+    // 4x4 tiles of 64x32: isometric object positions go up to 4 * 32 on both axes.
+    const map = file(
+      'iso-objects.tmx',
+      `<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" orientation="isometric" width="4" height="4" tilewidth="64" tileheight="32" infinite="0" nextobjectid="3">
+<objectgroup id="1" name="O"><object id="1" x="100" y="120"/><object id="2" x="200" y="50"/></objectgroup>
+</map>`,
+    );
+    expect(rules(checkFile(map))).toEqual([
+      "object-outside-map: layer 'O' object 2: at (200, 50), the map is 128x128 px",
+    ]);
+  });
+
   it('warns about tilesets nothing in the map uses', () => {
     const tileset = (first: number, name: string) =>
       `<tileset firstgid="${first}" name="${name}" tilewidth="16" tileheight="16" tilecount="4" columns="2"><image source="tiles.png" width="32" height="32"/></tileset>`;

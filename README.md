@@ -56,7 +56,7 @@ npx github:vtxe02023274/tiledcheck maps/
 | `tile-data`           | 錯誤 | 圖塊資料解不開（zstd 壓縮只會給警告，因為沒有檢查）                                                           |
 | `duplicate-object-id` | 錯誤 | 兩個物件用了同一個 id                                                                                         |
 | `next-object-id`      | 警告 | 物件 id 沒有小於地圖的 nextobjectid，Tiled 下次存檔可能重編                                                   |
-| `object-outside-map`  | 警告 | 物件整個在地圖外（只檢查正交、非無限地圖）                                                                    |
+| `object-outside-map`  | 警告 | 物件整個在地圖外（只檢查正交與等角、非無限地圖）                                                              |
 | `world-overlap`       | 警告 | .world 裡兩張地圖的位置重疊                                                                                   |
 | `unused-tileset`      | 警告 | 地圖裡沒有任何圖塊或物件用到這個 tileset，會照 tileset 清單載圖的引擎還是會載它的圖片（用了物件模板時不檢查） |
 
