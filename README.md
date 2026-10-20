@@ -46,6 +46,23 @@ npx tiledcheck maps/
 
 `path` 一行寫一個路徑或 glob（支援 `**`），路徑可以有空格。`ignore` 用空格分隔。
 
+### 在 Tiled 裡檢查
+
+把 [`extension/tiledcheck.js`](extension/tiledcheck.js) 放進 Tiled 的擴充資料夾（Edit > Preferences > Plugins 的 Extensions 那欄按 Open... 會打開它），重開 Tiled 或等它自動重新載入，「地圖」選單最下面會多一個 **Check with tiledcheck**。需要 Tiled 1.10 以上，電腦上要有 Node.js 20 以上。
+
+它會對目前地圖存在磁碟上的檔案跑 `npx --yes tiledcheck --json <地圖>`（地圖有未存檔的修改時會先問要不要存），每個問題列在 Issues（問題）面板，錯誤和警告分開顯示，地圖用到的 tileset 檔的問題會在前面標檔名。雙擊問題會選取它說的物件（並把畫面移過去）或圖層；tileset 檔或世界裡的地圖會直接打開。沒有問題時會跳出 No problems found.。
+
+想改用本機安裝的 tiledcheck 或加參數，改檔案開頭的 `config`：
+
+```js
+const config = {
+  command: ['node', 'C:/tools/tiledcheck/dist/bin.js'],
+  args: ['--ignore', 'missing-image'],
+};
+```
+
+檢查時 Tiled 會等 tiledcheck 跑完才能繼續操作，第一次用 npx 需要下載，會等比較久。
+
 ## 規則
 
 | 規則                  | 等級 | 內容                                                                                                          |

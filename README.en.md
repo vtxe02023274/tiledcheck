@@ -46,6 +46,23 @@ In GitHub Actions, problems show up as annotations on the PR:
 
 `path` takes one path or glob per line (`**` is supported), and paths may contain spaces. `ignore` is separated by spaces.
 
+### Inside Tiled
+
+Copy [`extension/tiledcheck.js`](extension/tiledcheck.js) into the Tiled extensions folder (Edit > Preferences > Plugins, the Open... button next to Extensions opens it). After Tiled reloads it, the Map menu ends with **Check with tiledcheck**. It needs Tiled 1.10 or later and Node.js 20 or later.
+
+It runs `npx --yes tiledcheck --json <map>` on the saved map file (when the map has unsaved changes it asks to save first) and lists each problem in the Issues view as an error or a warning. Problems in a tileset file the map uses start with that file name. Double-click an issue to select the object it is about (and scroll to it) or the layer; tileset files and maps of a world are opened. When nothing is found it says No problems found.
+
+To use a local install or pass options, edit `config` at the top of the file:
+
+```js
+const config = {
+  command: ['node', 'C:/tools/tiledcheck/dist/bin.js'],
+  args: ['--ignore', 'missing-image'],
+};
+```
+
+Tiled waits for tiledcheck to finish while it checks. The first run through npx downloads the package and takes longer.
+
 ## Rules
 
 | Rule                  | Level   | What it means                                                                                                                                           |
