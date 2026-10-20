@@ -20,7 +20,7 @@ Requires Node.js 20 or later.
 npx github:vtxe02023274/tiledcheck maps/
 ```
 
-Pass maps, tilesets (.tsx / .tsj), worlds (.world, which checks every map they list) or folders; folders are searched recursively for maps and worlds. The exit code is 1 when there is an error.
+Pass maps, tilesets (.tsx / .tsj), worlds (.world, which checks every map they list, or the maps in their folder that match their patterns) or folders; folders are searched recursively for maps and worlds. The exit code is 1 when there is an error.
 
 | Option            | Effect                                                      |
 | ----------------- | ----------------------------------------------------------- |
@@ -51,7 +51,7 @@ In GitHub Actions, problems show up as annotations on the PR:
 | Rule                  | Level   | What it means                                                                                                                                           |
 | --------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `load-error`          | error   | The file cannot be read or parsed                                                                                                                       |
-| `missing-file`        | error   | An external tileset or object template is missing                                                                                                       |
+| `missing-file`        | error   | An external tileset, object template or template tileset is missing, or a world pattern matches no map                                                  |
 | `missing-image`       | error   | A tileset or image layer image is missing. Engines that load images separately, like Phaser, can turn it off with `--ignore missing-image`              |
 | `image-size`          | warning | A tileset image is not the size the tileset says, so tile ids shift (PNG, GIF, BMP, JPEG)                                                               |
 | `gid-out-of-range`    | error   | A tile or object gid is not in any tileset (flip flags are removed first)                                                                               |
@@ -63,7 +63,7 @@ In GitHub Actions, problems show up as annotations on the PR:
 | `next-object-id`      | warning | An object id is not below the map's nextobjectid, so Tiled may renumber it                                                                              |
 | `object-outside-map`  | warning | An object is entirely outside the map (orthogonal and isometric finite maps only)                                                                       |
 | `world-overlap`       | warning | Two maps in a .world are placed on top of each other                                                                                                    |
-| `unused-tileset`      | warning | No tile or object in the map uses the tileset, engines that load every listed tileset still load its image (skipped when the map uses object templates) |
+| `unused-tileset`      | warning | No tile or object in the map uses the tileset, engines that load every listed tileset still load its image (skipped if any object template cannot load) |
 
 CSV, base64 (uncompressed, zlib, gzip, and zstd on Node 22.15 or later), the old XML tile format, infinite map chunks and group layers are supported. When an old file leaves out `tilecount`, it is worked out from the image size the way Tiled does, or extended up to the next tileset's firstgid.
 

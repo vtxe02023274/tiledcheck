@@ -38,6 +38,13 @@ export interface Tileset {
   wangSets: WangSet[];
 }
 
+/** An object template (.tx / .tj): the tileset and gid of its object, if it is a tile object. */
+export interface Template {
+  file: string;
+  tileset?: { firstGid: number; source?: string };
+  gid?: number;
+}
+
 export interface WangSet {
   name: string;
   colorCount: number;

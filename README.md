@@ -20,7 +20,7 @@ tiles/walls.tsx: error: tileset 'walls' terrain set 'Walls': 255 colors, Tiled 1
 npx github:vtxe02023274/tiledcheck maps/
 ```
 
-可以給地圖、tileset（.tsx / .tsj）、世界（.world，會檢查裡面列的每張地圖）或資料夾，資料夾會往下找所有地圖和世界。有錯誤時結束碼是 1。
+可以給地圖、tileset（.tsx / .tsj）、世界（.world，會檢查裡面列的每張地圖，用 patterns 的世界則檢查同資料夾裡符合正規表示式的地圖）或資料夾，資料夾會往下找所有地圖和世界。有錯誤時結束碼是 1。
 
 | 參數              | 作用                                           |
 | ----------------- | ---------------------------------------------- |
@@ -51,7 +51,7 @@ npx github:vtxe02023274/tiledcheck maps/
 | 規則                  | 等級 | 內容                                                                                                          |
 | --------------------- | ---- | ------------------------------------------------------------------------------------------------------------- |
 | `load-error`          | 錯誤 | 檔案讀不了或格式壞了                                                                                          |
-| `missing-file`        | 錯誤 | 外部 tileset 或物件模板不存在                                                                                 |
+| `missing-file`        | 錯誤 | 外部 tileset、物件模板、模板用的 tileset 不存在，或世界的 pattern 沒有符合的地圖                              |
 | `missing-image`       | 錯誤 | tileset 圖片或圖層圖片不存在。Phaser 這類另外載入圖片的引擎可以用 `--ignore missing-image` 關掉               |
 | `image-size`          | 警告 | tileset 圖片的實際尺寸跟 tileset 寫的不一樣，圖塊編號會錯位（支援 PNG、GIF、BMP、JPEG）                       |
 | `gid-out-of-range`    | 錯誤 | 圖塊或物件的 gid 不在任何 tileset 範圍內（翻轉旗標會先去掉）                                                  |
@@ -63,7 +63,7 @@ npx github:vtxe02023274/tiledcheck maps/
 | `next-object-id`      | 警告 | 物件 id 沒有小於地圖的 nextobjectid，Tiled 下次存檔可能重編                                                   |
 | `object-outside-map`  | 警告 | 物件整個在地圖外（只檢查正交與等角、非無限地圖）                                                              |
 | `world-overlap`       | 警告 | .world 裡兩張地圖的位置重疊                                                                                   |
-| `unused-tileset`      | 警告 | 地圖裡沒有任何圖塊或物件用到這個 tileset，會照 tileset 清單載圖的引擎還是會載它的圖片（用了物件模板時不檢查） |
+| `unused-tileset`      | 警告 | 地圖裡沒有任何圖塊或物件用到這個 tileset，會照 tileset 清單載圖的引擎還是會載它的圖片（物件模板讀不到時略過） |
 
 支援 CSV、base64（無壓縮、zlib、gzip，Node 22.15 起也支援 zstd）、舊版 XML 圖塊資料、無限地圖的 chunk、群組圖層。舊檔案沒寫 `tilecount` 時，會照 Tiled 的算法從圖片尺寸推算；推不出來就延伸到下一個 tileset 的 firstgid。
 

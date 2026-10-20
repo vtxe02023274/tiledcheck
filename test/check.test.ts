@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import * as zlib from 'node:zlib';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { checkFile, type Diagnostic } from '../src/check.js';
@@ -29,7 +29,11 @@ beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), 'tiledcheck-'));
   file('tiles.png', '');
   file('tiles.tsx', TSX);
-  file('enemy.tx', '<template/>');
+  file('enemy.tx', '<template><object name="enemy" width="16" height="16"/></template>');
+  file(
+    'tile-enemy.tx',
+    '<template><tileset firstgid="1" source="tiles.tsx"/><object name="enemy" gid="2" width="16" height="16"/></template>',
+  );
 });
 
 describe('clean maps', () => {
@@ -297,11 +301,40 @@ describe('problems', () => {
     const withTemplate = file(
       'unused-template.tmx',
       tmx(
-        `${tileset(1, 'ground')}<objectgroup id="1" name="O"><object id="1" template="enemy.tx" x="0" y="0"/></objectgroup>`,
+        `<tileset firstgid="1" source="tiles.tsx"/>${tileset(5, 'spare')}<objectgroup id="1" name="O"><object id="1" template="tile-enemy.tx" x="0" y="16"/></objectgroup>`,
       ),
     );
-    // A template may bring a tile object from that tileset, so stay quiet.
-    expect(rules(checkFile(withTemplate))).toEqual([]);
+    // The template's tile object uses tiles.tsx through its own gid.
+    expect(rules(checkFile(withTemplate))).toEqual([
+      "unused-tileset: tileset 'spare' (firstgid 5): no tile or object in this map uses it",
+    ]);
+  });
+
+  it('reports templates whose tileset does not exist', () => {
+    file(
+      'tx/broken.tx',
+      '<template><tileset firstgid="1" source="gone.tsx"/><object gid="1" width="16" height="16"/></template>',
+    );
+    file(
+      'tx/broken.tj',
+      JSON.stringify({
+        type: 'template',
+        tileset: { firstgid: 1, source: 'gone.tsj' },
+        object: { gid: 1, width: 16, height: 16 },
+      }),
+    );
+    const map = file(
+      'broken-template.tmx',
+      tmx(
+        `<tileset firstgid="1" source="tiles.tsx"/><layer id="1" name="L" width="3" height="2"><data encoding="csv">1,0,0,0,0,0</data></layer>
+<objectgroup id="2" name="O"><object id="1" template="tx/broken.tx" x="0" y="16"/><object id="2" template="tx/broken.tx" x="16" y="16"/>
+<object id="3" template="tx/broken.tj" x="32" y="16"/></objectgroup>`,
+      ),
+    );
+    expect(checkFile(map).map((d) => `${d.file.slice(dir.length + 1)}: ${rules([d])[0]}`)).toEqual([
+      `tx${sep}broken.tx: missing-file: tileset (firstgid 1): gone.tsx does not exist`,
+      `tx${sep}broken.tj: missing-file: tileset (firstgid 1): gone.tsj does not exist`,
+    ]);
   });
 
   it('skips id checks for objects from maps older than object ids', () => {
@@ -389,6 +422,25 @@ describe('worlds', () => {
       "gid-out-of-range: layer 'L': gid 9 is not in any tileset, used in 1 cell",
       'missing-file: map gone.tmx: gone.tmx does not exist',
       'world-overlap: map b.tmx: overlaps a.tmx',
+    ]);
+  });
+
+  it('checks the maps a world matches with patterns', () => {
+    file('pworld/level-1.tmx', tmx('<tileset firstgid="1" source="gone.tsx"/>'));
+    file('pworld/level-x.tmx', tmx('<tileset firstgid="1" source="gone.tsx"/>'));
+    const world = file(
+      'pworld/p.world',
+      JSON.stringify({
+        type: 'world',
+        patterns: [
+          { regexp: 'level-(\\d+)\\.tmx', multiplierX: 48, multiplierY: 32 },
+          { regexp: 'room-(\\d+)-(\\d+)\\.tmx' },
+        ],
+      }),
+    );
+    expect(rules(checkFile(world))).toEqual([
+      'missing-file: tileset (firstgid 1): gone.tsx does not exist',
+      'missing-file: pattern room-(\\d+)-(\\d+)\\.tmx: no file in the folder of the world matches it',
     ]);
   });
 });
