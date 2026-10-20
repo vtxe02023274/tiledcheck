@@ -1,0 +1,71 @@
+# tiledcheck
+
+[中文](README.md)
+
+Checks Tiled maps (.tmx / .tmj) for problems that break things in your game: tilesets, images and templates that do not exist, gids no tileset covers, duplicate object ids, and terrain sets Tiled itself silently drops. Run it locally or in CI.
+
+```
+$ tiledcheck maps/
+maps/town.tmx: error: tileset (firstgid 1): ../tiles/town.tsx does not exist [missing-file]
+maps/town.tmx: error: layer 'Ground': gid 97 is not in any tileset (12 tiles) [gid-out-of-range]
+tiles/walls.tsx: error: tileset 'walls' terrain set 'Walls': 255 colors, Tiled 1.10.2+ supports 254 and silently drops every terrain set of this tileset [terrain-colors]
+3 files checked, 3 errors, 0 warnings
+```
+
+## Usage
+
+Requires Node.js 20 or later.
+
+```sh
+npx github:vtxe02023274/tiledcheck maps/
+```
+
+Pass maps, tilesets (.tsx / .tsj) or folders; folders are searched recursively for maps. The exit code is 1 when there is an error.
+
+| Option            | Effect                       |
+| ----------------- | ---------------------------- |
+| `--json`          | print JSON                   |
+| `--no-warnings`   | only report errors           |
+| `--ignore <rule>` | skip a rule, can be repeated |
+| `--rules`         | list the rules               |
+
+In GitHub Actions:
+
+```yaml
+- uses: actions/setup-node@v5
+  with:
+    node-version: 22
+- run: npx github:vtxe02023274/tiledcheck maps/
+```
+
+## Rules
+
+| Rule                  | Level   | What it means                                                                                      |
+| --------------------- | ------- | -------------------------------------------------------------------------------------------------- |
+| `load-error`          | error   | The file cannot be read or parsed                                                                  |
+| `missing-file`        | error   | An external tileset, image, image layer image or object template is missing                        |
+| `gid-out-of-range`    | error   | A tile or object gid is not in any tileset (flip flags are removed first)                          |
+| `tileset-overlap`     | error   | Two tilesets claim the same gids                                                                   |
+| `terrain-colors`      | error   | A terrain set has more than 254 colors; since Tiled 1.10.2 none of the tileset's terrain sets load |
+| `layer-size`          | error   | The number of tiles in a layer does not match width x height                                       |
+| `tile-data`           | error   | Tile data cannot be decoded (zstd only warns, since it is not checked)                             |
+| `duplicate-object-id` | error   | Two objects share an id                                                                            |
+| `next-object-id`      | warning | An object id is not below the map's nextobjectid, so Tiled may renumber it                         |
+| `object-outside-map`  | warning | An object is entirely outside the map (orthogonal, finite maps only)                               |
+
+CSV, base64 (uncompressed, zlib, gzip), the old XML tile format, infinite map chunks and group layers are supported. When an old file leaves out `tilecount`, it is worked out from the image size the way Tiled does, or extended up to the next tileset's firstgid.
+
+Tested against the 22 example maps in the Tiled source tree with no false positives.
+
+## Development
+
+```sh
+npm install
+npm test
+npm run lint
+npm run build   # writes dist/
+```
+
+## License
+
+MIT
