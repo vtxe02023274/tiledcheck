@@ -55,7 +55,7 @@ In GitHub Actions:
 
 CSV, base64 (uncompressed, zlib, gzip), the old XML tile format, infinite map chunks and group layers are supported. When an old file leaves out `tilecount`, it is worked out from the image size the way Tiled does, or extended up to the next tileset's firstgid.
 
-Tested against the 22 example maps in the Tiled source tree with no false positives.
+Tested against the 22 example maps in the Tiled source tree, both the TMX originals and JSON copies exported by Tiled, with the same results and no false positives (only two warnings for objects that really are outside their map).
 
 ## Development
 

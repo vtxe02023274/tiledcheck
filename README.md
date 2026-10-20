@@ -55,7 +55,7 @@ npx github:vtxe02023274/tiledcheck maps/
 
 支援 CSV、base64（無壓縮、zlib、gzip）、舊版 XML 圖塊資料、無限地圖的 chunk、群組圖層。舊檔案沒寫 `tilecount` 時，會照 Tiled 的算法從圖片尺寸推算；推不出來就延伸到下一個 tileset 的 firstgid。
 
-用 Tiled 原始碼裡的 22 張範例地圖測過，沒有誤報。
+用 Tiled 原始碼裡的 22 張範例地圖測過，TMX 原檔和用 Tiled 轉出的 JSON 版結果一致，沒有誤報（只有 2 個物件確實在地圖外的警告）。
 
 ## 開發
 
