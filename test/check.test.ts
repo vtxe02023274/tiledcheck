@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { deflateSync } from 'node:zlib';
+import * as zlib from 'node:zlib';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { checkFile, type Diagnostic } from '../src/check.js';
 import { run } from '../src/cli.js';
@@ -68,7 +68,7 @@ describe('clean maps', () => {
             width: 2,
             height: 2,
             chunks: [
-              { x: 0, y: 0, width: 2, height: 2, data: deflateSync(gids).toString('base64') },
+              { x: 0, y: 0, width: 2, height: 2, data: zlib.deflateSync(gids).toString('base64') },
             ],
           },
         ],
@@ -278,18 +278,33 @@ describe('problems', () => {
     expect(rules(checkFile(file('broken.tmx', '<notamap/>')))).toEqual([
       'load-error: file: no <map> element',
     ]);
-    expect(
-      rules(
-        checkFile(
-          file(
-            'zstd.tmx',
-            tmx(
-              '<layer name="Z" width="3" height="2"><data encoding="base64" compression="zstd">AAAA</data></layer>',
-            ),
-          ),
-        ),
+  });
+
+  it('checks zstd compressed tile data when Node can decompress it', () => {
+    const zstdCompress = (zlib as { zstdCompressSync?: (b: Buffer) => Buffer }).zstdCompressSync;
+    const gids = Buffer.alloc(6 * 4);
+    [1, 5, 0, 0, 0, 0].forEach((g, i) => gids.writeUInt32LE(g, i * 4));
+    const map = file(
+      'zstd.tmx',
+      tmx(
+        `<tileset firstgid="1" source="tiles.tsx"/><tileset firstgid="5" source="tiles.tsx"/>
+<layer name="Z" width="3" height="2"><data encoding="base64" compression="zstd">${zstdCompress ? zstdCompress(gids).toString('base64') : 'AAAA'}</data></layer>`,
       ),
-    ).toEqual(["tile-data: layer 'Z': zstd compressed tile data is not checked"]);
+    );
+    expect(rules(checkFile(map))).toEqual(
+      zstdCompress ? [] : ["tile-data: layer 'Z': zstd compressed tile data is not checked"],
+    );
+  });
+
+  it('does not call tilesets unused when a layer cannot be decoded', () => {
+    const map = file(
+      'undecodable.tmx',
+      tmx(
+        `<tileset firstgid="1" source="tiles.tsx"/><tileset firstgid="5" source="tiles.tsx"/>
+<layer name="Z" width="3" height="2"><data encoding="base64" compression="lzma">AAAA</data></layer>`,
+      ),
+    );
+    expect(rules(checkFile(map))).toEqual(["tile-data: layer 'Z': unknown compression 'lzma'"]);
   });
 });
 

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, extname, resolve } from 'node:path';
-import { gunzipSync, inflateSync } from 'node:zlib';
+import * as zlib from 'node:zlib';
 import { XMLParser } from 'fast-xml-parser';
 import type {
   Layer,
@@ -13,6 +13,9 @@ import type {
 } from './model.js';
 
 export class LoadError extends Error {}
+
+// Node 22.15 and later can decompress zstd; older versions leave it unchecked.
+const zstdDecompress = (zlib as { zstdDecompressSync?: (b: Buffer) => Buffer }).zstdDecompressSync;
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- parsed files are untyped by nature */
 
@@ -361,11 +364,13 @@ function decodeData(data: unknown, encoding?: string, compression?: string): num
       .map((v) => num(v));
   }
   if (encoding !== 'base64') throw new Error(`unknown tile data encoding '${encoding}'`);
-  let bytes = Buffer.from(s, 'base64');
-  if (compression === 'zlib') bytes = inflateSync(bytes);
-  else if (compression === 'gzip') bytes = gunzipSync(bytes);
-  else if (compression === 'zstd') throw new Error('zstd compressed tile data is not checked');
-  else if (compression) throw new Error(`unknown compression '${compression}'`);
+  let bytes: Buffer = Buffer.from(s, 'base64');
+  if (compression === 'zlib') bytes = zlib.inflateSync(bytes);
+  else if (compression === 'gzip') bytes = zlib.gunzipSync(bytes);
+  else if (compression === 'zstd') {
+    if (!zstdDecompress) throw new Error('zstd compressed tile data is not checked');
+    bytes = zstdDecompress(bytes);
+  } else if (compression) throw new Error(`unknown compression '${compression}'`);
   const gids: number[] = [];
   for (let i = 0; i + 4 <= bytes.length; i += 4) gids.push(bytes.readUInt32LE(i));
   return gids;

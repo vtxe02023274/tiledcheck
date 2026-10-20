@@ -53,14 +53,14 @@ npx github:vtxe02023274/tiledcheck maps/
 | `tileset-overlap`     | 錯誤 | 兩個 tileset 的 gid 範圍重疊                                                                                  |
 | `terrain-colors`      | 錯誤 | 地形組超過 254 色，Tiled 1.10.2 起整個 tileset 的地形都讀不到                                                 |
 | `layer-size`          | 錯誤 | 圖層的圖塊數跟寬×高對不上                                                                                     |
-| `tile-data`           | 錯誤 | 圖塊資料解不開（zstd 壓縮只會給警告，因為沒有檢查）                                                           |
+| `tile-data`           | 錯誤 | 圖塊資料解不開（Node 22.15 以前的版本解不了 zstd，只會給警告）                                                |
 | `duplicate-object-id` | 錯誤 | 兩個物件用了同一個 id                                                                                         |
 | `next-object-id`      | 警告 | 物件 id 沒有小於地圖的 nextobjectid，Tiled 下次存檔可能重編                                                   |
 | `object-outside-map`  | 警告 | 物件整個在地圖外（只檢查正交與等角、非無限地圖）                                                              |
 | `world-overlap`       | 警告 | .world 裡兩張地圖的位置重疊                                                                                   |
 | `unused-tileset`      | 警告 | 地圖裡沒有任何圖塊或物件用到這個 tileset，會照 tileset 清單載圖的引擎還是會載它的圖片（用了物件模板時不檢查） |
 
-支援 CSV、base64（無壓縮、zlib、gzip）、舊版 XML 圖塊資料、無限地圖的 chunk、群組圖層。舊檔案沒寫 `tilecount` 時，會照 Tiled 的算法從圖片尺寸推算；推不出來就延伸到下一個 tileset 的 firstgid。
+支援 CSV、base64（無壓縮、zlib、gzip，Node 22.15 起也支援 zstd）、舊版 XML 圖塊資料、無限地圖的 chunk、群組圖層。舊檔案沒寫 `tilecount` 時，會照 Tiled 的算法從圖片尺寸推算；推不出來就延伸到下一個 tileset 的 firstgid。
 
 用 Tiled 原始碼裡的 22 張範例地圖測過，TMX 原檔和用 Tiled 轉出的 JSON 版結果一致，沒有誤報（只有 2 個物件確實在地圖外的警告）。也掃過 phaserjs/examples 的 108 個地圖檔（加 `--ignore missing-image`），只報出 1 張 tilecount 寫錯的地圖和 3 個本來就不是 Tiled 格式的檔案。
 
