@@ -53,14 +53,14 @@ In GitHub Actions, problems show up as annotations on the PR:
 | `tileset-overlap`     | error   | Two tilesets claim the same gids                                                                                                                        |
 | `terrain-colors`      | error   | A terrain set has more than 254 colors; since Tiled 1.10.2 none of the tileset's terrain sets load                                                      |
 | `layer-size`          | error   | The number of tiles in a layer does not match width x height                                                                                            |
-| `tile-data`           | error   | Tile data cannot be decoded (zstd only warns, since it is not checked)                                                                                  |
+| `tile-data`           | error   | Tile data cannot be decoded (zstd only warns before Node 22.15, which cannot decompress it)                                                             |
 | `duplicate-object-id` | error   | Two objects share an id                                                                                                                                 |
 | `next-object-id`      | warning | An object id is not below the map's nextobjectid, so Tiled may renumber it                                                                              |
 | `object-outside-map`  | warning | An object is entirely outside the map (orthogonal and isometric finite maps only)                                                                       |
 | `world-overlap`       | warning | Two maps in a .world are placed on top of each other                                                                                                    |
 | `unused-tileset`      | warning | No tile or object in the map uses the tileset, engines that load every listed tileset still load its image (skipped when the map uses object templates) |
 
-CSV, base64 (uncompressed, zlib, gzip), the old XML tile format, infinite map chunks and group layers are supported. When an old file leaves out `tilecount`, it is worked out from the image size the way Tiled does, or extended up to the next tileset's firstgid.
+CSV, base64 (uncompressed, zlib, gzip, and zstd on Node 22.15 or later), the old XML tile format, infinite map chunks and group layers are supported. When an old file leaves out `tilecount`, it is worked out from the image size the way Tiled does, or extended up to the next tileset's firstgid.
 
 Tested against the 22 example maps in the Tiled source tree, both the TMX originals and JSON copies exported by Tiled, with the same results and no false positives (only two warnings for objects that really are outside their map). It also ran over the 108 map files in phaserjs/examples (with `--ignore missing-image`) and only reported one map with a wrong tilecount and three files that are not Tiled maps at all.
 

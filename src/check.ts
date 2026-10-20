@@ -131,6 +131,7 @@ export function checkMap(map: TiledMap): Diagnostic[] {
     const where = `layer '${path}'`;
     switch (layer.kind) {
       case 'tile': {
+        if (!layer.gids) usageKnown = false;
         if (layer.dataProblem) {
           report(
             layer.dataProblem.includes('not checked') ? 'warning' : 'error',
@@ -153,7 +154,6 @@ export function checkMap(map: TiledMap): Diagnostic[] {
           );
         }
         const bad = new Map<number, number>();
-        if (!layer.gids) usageKnown = false;
         for (const raw of layer.gids ?? []) {
           const gid = raw & GID_MASK;
           if (gid) used.add(gid);
