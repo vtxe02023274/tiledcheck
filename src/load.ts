@@ -298,7 +298,9 @@ function layersFromXml(parent: any, infinite: boolean): Layer[] {
     try {
       if (data?.chunk) {
         layer.gids = data.chunk.flatMap((c: any) =>
-          decodeData(text(c), data.encoding, data.compression),
+          c.tile
+            ? c.tile.map((t: any) => num(t.gid))
+            : decodeData(text(c), data.encoding, data.compression),
         );
       } else if (data?.tile) {
         // Plain XML format: one <tile gid=""/> per cell.
