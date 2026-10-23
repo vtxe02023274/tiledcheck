@@ -1,8 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { dirname, extname } from 'node:path';
 import { imageSize } from './image.js';
-import { readFileSync } from 'node:fs';
-import { LoadError, loadMap, loadTemplate, loadTileset, resolveRef } from './load.js';
+import { LoadError, loadMap, loadTemplate, loadTileset, readText, resolveRef } from './load.js';
 import {
   allLayers,
   GID_MASK,
@@ -382,7 +381,7 @@ function checkWorld(file: string): Diagnostic[] {
     }[];
   };
   try {
-    world = JSON.parse(readFileSync(file, 'utf8'));
+    world = JSON.parse(readText(file));
   } catch (err) {
     return [
       {

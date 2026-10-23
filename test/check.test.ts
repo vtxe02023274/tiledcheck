@@ -95,6 +95,44 @@ describe('clean maps', () => {
     ]);
   });
 
+  it('reads JSON maps, tilesets and worlds that start with a byte order mark', () => {
+    const bom = (text: string) =>
+      Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from(text)]);
+    file(
+      'bom/tiles.tsj',
+      bom(
+        JSON.stringify({
+          type: 'tileset',
+          name: 'tiles',
+          tilewidth: 16,
+          tileheight: 16,
+          tilecount: 4,
+          columns: 2,
+          image: '../tiles.png',
+          imagewidth: 32,
+          imageheight: 32,
+        }),
+      ),
+    );
+    const map = JSON.stringify({
+      type: 'map',
+      orientation: 'orthogonal',
+      width: 1,
+      height: 1,
+      tilewidth: 16,
+      tileheight: 16,
+      tilesets: [{ firstgid: 1, source: 'tiles.tsj' }],
+      layers: [{ type: 'tilelayer', name: 'L', width: 1, height: 1, data: [1] }],
+    });
+    file('bom/map.tmj', bom(map));
+    const world = file(
+      'bom/maps.world',
+      bom(JSON.stringify({ type: 'world', maps: [{ fileName: 'map.tmj', x: 0, y: 0 }] })),
+    );
+    expect(rules(checkFile(join(dir, 'bom/map.tmj')))).toEqual([]);
+    expect(rules(checkFile(world))).toEqual([]);
+  });
+
   it('reads old JSON maps that keep tiles in an object keyed by id', () => {
     const map = file(
       'old-json.json',

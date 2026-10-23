@@ -47,9 +47,10 @@ const num = (v: unknown, fallback = 0): number => {
   return Number.isFinite(n) ? n : fallback;
 };
 
-function readText(file: string): string {
+/** Reads a file as UTF-8 without the byte order mark some Windows editors add. */
+export function readText(file: string): string {
   try {
-    return readFileSync(file, 'utf8');
+    return readFileSync(file, 'utf8').replace(/^﻿/, '');
   } catch (err) {
     throw new LoadError(`cannot read file: ${(err as NodeJS.ErrnoException).code ?? err}`);
   }
