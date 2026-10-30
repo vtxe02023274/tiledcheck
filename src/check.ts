@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { dirname, extname } from 'node:path';
 import { imageSize } from './image.js';
 import { LoadError, loadMap, loadTemplate, loadTileset, readText, resolveRef } from './load.js';
@@ -42,9 +42,13 @@ export const RULES: Record<string, string> = {
   'unused-tileset': 'No tile or object in the map uses a tileset',
 };
 
+/** Images must be files; a folder or a file that cannot be read counts as missing. */
+function imageExists(path: string): boolean {
+  return statSync(path, { throwIfNoEntry: false })?.isFile() ?? false;
+}
+
 export function checkFile(file: string): Diagnostic[] {
   const ext = extname(file).toLowerCase();
-  let map: TiledMap;
   try {
     if (ext === '.world') return checkWorld(file);
     if (ext === '.tsx' || ext === '.tsj') {
@@ -53,14 +57,13 @@ export function checkFile(file: string): Diagnostic[] {
       checkTileset(ts, `tileset '${ts.name}'`, (d) => out.push(d));
       return out;
     }
-    map = loadMap(file);
+    return checkMap(loadMap(file));
   } catch (err) {
     // Files in the wild have every shape imaginable; report instead of crashing.
     const message =
       err instanceof LoadError ? err.message : `cannot parse: ${(err as Error).message}`;
     return [{ severity: 'error', rule: 'load-error', file, where: 'file', message }];
   }
-  return checkMap(map);
 }
 
 export function checkMap(map: TiledMap): Diagnostic[] {
@@ -94,7 +97,7 @@ export function checkMap(map: TiledMap): Diagnostic[] {
     const count =
       ts.tileCount === undefined
         ? undefined
-        : Math.max(ts.tileCount, ...ts.tileImages.map((t) => t.id + 1));
+        : ts.tileImages.reduce((max, t) => Math.max(max, t.id + 1), ts.tileCount);
     ranges.push({
       first: ref.firstGid,
       last: count === undefined ? Infinity : ref.firstGid + count - 1,
@@ -252,7 +255,7 @@ export function checkMap(map: TiledMap): Diagnostic[] {
         }
         break;
       case 'image':
-        if (layer.image && !existsSync(resolveRef(map.file, layer.image))) {
+        if (layer.image && !imageExists(resolveRef(map.file, layer.image))) {
           report('error', 'missing-image', where, `image ${layer.image} does not exist`);
         }
         break;
@@ -293,11 +296,12 @@ function objectBounds(o: MapObject): { left: number; right: number; top: number;
   const round = (v: number) => Math.round(v * 1000) / 1000;
   const xs = corners.map((p) => o.x + round(p.x * cos - p.y * sin));
   const ys = corners.map((p) => o.y + round(p.x * sin + p.y * cos));
+  // Loops instead of Math.min(...xs): a huge polygon would overflow the call stack.
   return {
-    left: Math.min(...xs),
-    right: Math.max(...xs),
-    top: Math.min(...ys),
-    bottom: Math.max(...ys),
+    left: xs.reduce((m, v) => Math.min(m, v), Infinity),
+    right: xs.reduce((m, v) => Math.max(m, v), -Infinity),
+    top: ys.reduce((m, v) => Math.min(m, v), Infinity),
+    bottom: ys.reduce((m, v) => Math.max(m, v), -Infinity),
   };
 }
 
@@ -329,10 +333,15 @@ function checkTileset(ts: Tileset, where: string, push: (d: Diagnostic) => void)
     push({ severity, rule, file: ts.file, where: at, message });
   if (ts.image) {
     const path = resolveRef(ts.file, ts.image);
-    if (!existsSync(path)) {
+    if (!imageExists(path)) {
       report('missing-image', where, `image ${ts.image} does not exist`);
     } else if (ts.imageWidth && ts.imageHeight) {
-      const real = imageSize(path);
+      let real: ReturnType<typeof imageSize>;
+      try {
+        real = imageSize(path);
+      } catch {
+        real = undefined; // unreadable, nothing to compare
+      }
       if (real && (real.width !== ts.imageWidth || real.height !== ts.imageHeight)) {
         report(
           'image-size',
@@ -344,7 +353,7 @@ function checkTileset(ts: Tileset, where: string, push: (d: Diagnostic) => void)
     }
   }
   for (const t of ts.tileImages) {
-    if (!existsSync(resolveRef(ts.file, t.image))) {
+    if (!imageExists(resolveRef(ts.file, t.image))) {
       report('missing-image', `${where} tile ${t.id}`, `image ${t.image} does not exist`);
     }
   }

@@ -531,3 +531,37 @@ describe('cli', () => {
     expect(run([join(dir, 'does-not-exist')], (s) => (out += s))).toBe(2);
   });
 });
+
+describe('inputs that used to crash the checker', () => {
+  it('reports an image that is a folder instead of throwing', () => {
+    mkdirSync(join(dir, 'crash/pic.png'), { recursive: true });
+    const map = file(
+      'crash/a.tmx',
+      tmx(`<tileset firstgid="1" name="t" tilewidth="16" tileheight="16" tilecount="4">
+ <image source="pic.png" width="32" height="32"/></tileset>`),
+    );
+    expect(rules(checkFile(map)).join('\n')).toMatch(/missing-image.*pic\.png does not exist/);
+  });
+
+  it('handles huge polygons and collection tilesets', () => {
+    const points = Array.from({ length: 200000 }, (_, i) => ({ x: i, y: i }));
+    const tiles = Array.from({ length: 200000 }, (_, i) => ({ id: i, image: 'x.png' }));
+    const map = file(
+      'crash/big.tmj',
+      JSON.stringify({
+        type: 'map',
+        width: 2,
+        height: 2,
+        tilewidth: 16,
+        tileheight: 16,
+        tilesets: [{ firstgid: 1, name: 'n', tilecount: 3, tiles }],
+        layers: [
+          { type: 'objectgroup', name: 'o', objects: [{ id: 1, x: 1, y: 1, polygon: points }] },
+        ],
+      }),
+    );
+    const found = rules(checkFile(map));
+    expect(found.some((r) => r.startsWith('load-error'))).toBe(false);
+    expect(found.some((r) => r.startsWith('missing-image'))).toBe(true);
+  });
+});
