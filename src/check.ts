@@ -110,15 +110,20 @@ export function checkMap(map: TiledMap): Diagnostic[] {
     r.last = next.length ? Math.min(...next) - 1 : Infinity;
   }
   const sorted = [...ranges].sort((a, b) => a.first - b.first);
+  // Compare with the range that reaches furthest so far, a short range in
+  // between must not hide an overlap with an earlier long one.
+  let reach = sorted[0];
   for (let i = 1; i < sorted.length; i++) {
-    if (sorted[i]!.first <= sorted[i - 1]!.last) {
+    const cur = sorted[i]!;
+    if (cur.first <= reach!.last) {
       report(
         'error',
         'tileset-overlap',
-        sorted[i]!.where,
-        `gids ${sorted[i]!.first}-${sorted[i - 1]!.last} are also covered by ${sorted[i - 1]!.where}`,
+        cur.where,
+        `gids ${cur.first}-${Math.min(cur.last, reach!.last)} are also covered by ${reach!.where}`,
       );
     }
+    if (cur.last > reach!.last) reach = cur;
   }
   // Tilesets that failed to load cannot be checked against, so skip gid checks for them.
   const unknownRanges = map.tilesets.some((t) => !t.tileset);

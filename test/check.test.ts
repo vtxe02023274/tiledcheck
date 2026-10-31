@@ -216,6 +216,23 @@ describe('problems', () => {
     ]);
   });
 
+  it('reports an overlap with an earlier tileset hidden behind a short one', () => {
+    file(
+      'one.tsx',
+      '<tileset version="1.10" name="one" tilewidth="16" tileheight="16" tilecount="1" columns="1"><image source="tiles.png" width="16" height="16"/></tileset>',
+    );
+    const map = file(
+      'hidden-overlap.tmx',
+      tmx(`<tileset firstgid="1" source="tiles.tsx"/>
+ <tileset firstgid="2" source="one.tsx"/>
+ <tileset firstgid="3" source="tiles.tsx"/>`),
+    );
+    expect(rules(checkFile(map)).filter((r) => r.startsWith('tileset-overlap'))).toEqual([
+      "tileset-overlap: tileset 'one' (firstgid 2): gids 2-2 are also covered by tileset 'tiles' (firstgid 1)",
+      "tileset-overlap: tileset 'tiles' (firstgid 3): gids 3-4 are also covered by tileset 'tiles' (firstgid 1)",
+    ]);
+  });
+
   it('reports duplicate object ids, ids past nextobjectid and objects off the map', () => {
     const map = file(
       'objects.tmx',
