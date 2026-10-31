@@ -306,6 +306,47 @@ describe('problems', () => {
     ]);
   });
 
+  it('takes size, rotation and shape of a template instance from its template', () => {
+    file('box.tx', '<template><object name="box" width="40" height="40"/></template>');
+    file(
+      'tall.tx',
+      '<template><tileset firstgid="1" source="tiles.tsx"/><object gid="1" width="32" height="32"/></template>',
+    );
+    file(
+      'beam.tx',
+      '<template><object name="beam" x="0" y="0"><polyline points="0,0 120,0"/></object></template>',
+    );
+    file(
+      'turned.tx',
+      '<template><object name="turned" width="40" height="10" rotation="90"/></template>',
+    );
+    // 10x10 tiles of 16 px: the map is 160x160 px.
+    const map = file(
+      'template-bounds.tmx',
+      `<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" orientation="orthogonal" width="10" height="10" tilewidth="16" tileheight="16" infinite="0" nextobjectid="20">
+<tileset firstgid="1" source="tiles.tsx"/>
+<objectgroup id="1" name="O">
+ <object id="1" template="box.tx" x="0" y="-30"/>
+ <object id="2" template="tall.tx" x="0" y="170"/>
+ <object id="3" template="box.tx" x="200" y="0"/>
+ <object id="4" template="box.tx" x="-30" y="0" width="5"/>
+ <object id="5" template="beam.tx" x="-130" y="0"/>
+ <object id="6" template="beam.tx" x="-100" y="0"/>
+ <object id="7" template="turned.tx" x="-5" y="20"/>
+ <object id="8" template="tall.tx" x="0" y="-5"/>
+</objectgroup>
+</map>`,
+    );
+    expect(rules(checkFile(map))).toEqual([
+      "object-outside-map: layer 'O' object 3: at (200, 0), the map is 160x160 px",
+      "object-outside-map: layer 'O' object 4: at (-30, 0), the map is 160x160 px",
+      "object-outside-map: layer 'O' object 5: at (-130, 0), the map is 160x160 px",
+      "object-outside-map: layer 'O' object 7: at (-5, 20), the map is 160x160 px",
+      "object-outside-map: layer 'O' object 8: at (0, -5), the map is 160x160 px",
+    ]);
+  });
+
   it('uses the unrotated grid for objects on isometric maps', () => {
     // 4x4 tiles of 64x32: isometric object positions go up to 4 * 32 on both axes.
     const map = file(

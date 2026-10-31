@@ -226,6 +226,8 @@ export function checkMap(map: TiledMap): Diagnostic[] {
               `gid ${o.gid & GID_MASK} is not in any tileset`,
             );
           }
+          // An instance only stores what it changes, the rest comes from its template.
+          let shape = o;
           if (o.template) {
             const path = resolveRef(map.file, o.template);
             if (!existsSync(path)) {
@@ -234,12 +236,22 @@ export function checkMap(map: TiledMap): Diagnostic[] {
             const t = existsSync(path) ? loadTemplateOnce(path) : undefined;
             // A template that cannot be read may bring a tile from any tileset.
             if (!t) usageKnown = false;
-            else if (o.gid === undefined) {
-              const gid = templateGid(t);
-              if (gid) used.add(gid);
+            else {
+              shape = {
+                ...o,
+                gid: o.gid ?? t.gid,
+                width: o.width ?? t.width,
+                height: o.height ?? t.height,
+                rotation: o.rotation ?? t.rotation,
+                points: o.points ?? t.points,
+              };
+              if (o.gid === undefined) {
+                const gid = templateGid(t);
+                if (gid) used.add(gid);
+              }
             }
           }
-          const b = objectBounds(o);
+          const b = objectBounds(shape);
           if (
             !map.infinite &&
             boundsKnown &&
@@ -281,15 +293,17 @@ export function checkMap(map: TiledMap): Diagnostic[] {
 function objectBounds(o: MapObject): { left: number; right: number; top: number; bottom: number } {
   let corners = o.points?.length ? o.points : [];
   if (!corners.length) {
-    const top = o.gid !== undefined ? -o.height : 0;
+    const width = o.width ?? 0;
+    const height = o.height ?? 0;
+    const top = o.gid !== undefined ? -height : 0;
     corners = [
       { x: 0, y: top },
-      { x: o.width, y: top },
-      { x: 0, y: top + o.height },
-      { x: o.width, y: top + o.height },
+      { x: width, y: top },
+      { x: 0, y: top + height },
+      { x: width, y: top + height },
     ];
   }
-  const a = (o.rotation * Math.PI) / 180;
+  const a = ((o.rotation ?? 0) * Math.PI) / 180;
   const cos = Math.cos(a);
   const sin = Math.sin(a);
   // Rounded so a quarter turn does not leave an object a hair past an edge.

@@ -43,6 +43,11 @@ export interface Template {
   file: string;
   tileset?: { firstGid: number; source?: string };
   gid?: number;
+  /** What the template gives its instances unless they override it. */
+  width?: number;
+  height?: number;
+  rotation?: number;
+  points?: { x: number; y: number }[];
 }
 
 export interface WangSet {
@@ -77,10 +82,11 @@ export interface MapObject {
   template?: string;
   x: number;
   y: number;
-  width: number;
-  height: number;
+  /** Undefined when the object does not set it, a template instance then takes it from the template. */
+  width?: number;
+  height?: number;
   /** Degrees clockwise around x and y. */
-  rotation: number;
+  rotation?: number;
   /** Polygon or polyline points, relative to x and y. */
   points?: { x: number; y: number }[];
 }

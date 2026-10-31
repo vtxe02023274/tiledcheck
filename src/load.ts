@@ -91,6 +91,24 @@ function templateOf(file: string, tileset: any, object: any): Template {
     file,
     tileset: tileset ? { firstGid: num(tileset.firstgid), source: tileset.source } : undefined,
     gid: object?.gid === undefined ? undefined : num(object.gid),
+    ...shapeFields(object),
+    points: object === undefined ? undefined : pointsOf(object),
+  };
+}
+
+/** Polygon or polyline points of an object from either file format. */
+function pointsOf(o: any): { x: number; y: number }[] | undefined {
+  const shape = o.polygon ?? o.polyline;
+  if (Array.isArray(shape)) return shape.map((p: any) => ({ x: num(p.x), y: num(p.y) }));
+  return pointsFromXml(shape?.points);
+}
+
+/** Size and rotation as written, so a missing value stays distinct from 0. */
+function shapeFields(o: any): { width?: number; height?: number; rotation?: number } {
+  return {
+    width: o?.width === undefined ? undefined : num(o.width),
+    height: o?.height === undefined ? undefined : num(o.height),
+    rotation: o?.rotation === undefined ? undefined : num(o.rotation),
   };
 }
 
@@ -250,10 +268,8 @@ function objectFromJson(o: any): MapObject {
     template: o.template,
     x: num(o.x),
     y: num(o.y),
-    width: num(o.width),
-    height: num(o.height),
-    rotation: num(o.rotation),
-    points: (o.polygon ?? o.polyline)?.map((p: any) => ({ x: num(p.x), y: num(p.y) })),
+    ...shapeFields(o),
+    points: pointsOf(o),
   };
 }
 
@@ -354,10 +370,8 @@ function layersFromXml(parent: any, infinite: boolean): Layer[] {
         template: o.template,
         x: num(o.x),
         y: num(o.y),
-        width: num(o.width),
-        height: num(o.height),
-        rotation: num(o.rotation),
-        points: pointsFromXml((o.polygon ?? o.polyline)?.points),
+        ...shapeFields(o),
+        points: pointsOf(o),
       })),
     });
   }
