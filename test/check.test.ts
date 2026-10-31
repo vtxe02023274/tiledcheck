@@ -364,6 +364,27 @@ describe('problems', () => {
     ]);
   });
 
+  it('draws a tile object without a size at the size of its tile', () => {
+    // 10x10 tiles of 16 px: the map is 160x160 px, a 16 px tile at y 170 reaches up to 154.
+    const map = file(
+      'tile-object-size.tmx',
+      `<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" orientation="orthogonal" width="10" height="10" tilewidth="16" tileheight="16" infinite="0" nextobjectid="20">
+<tileset firstgid="1" source="tiles.tsx"/>
+<objectgroup id="1" name="O">
+ <object id="1" gid="1" x="0" y="170"/>
+ <object id="2" gid="1" x="0" y="180"/>
+ <object id="3" gid="1" x="170" y="100"/>
+ <object id="4" gid="1" x="-10" y="100"/>
+</objectgroup>
+</map>`,
+    );
+    expect(rules(checkFile(map))).toEqual([
+      "object-outside-map: layer 'O' object 2: at (0, 180), the map is 160x160 px",
+      "object-outside-map: layer 'O' object 3: at (170, 100), the map is 160x160 px",
+    ]);
+  });
+
   it('uses the unrotated grid for objects on isometric maps', () => {
     // 4x4 tiles of 64x32: isometric object positions go up to 4 * 32 on both axes.
     const map = file(

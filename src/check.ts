@@ -7,6 +7,7 @@ import {
   GID_MASK,
   type MapObject,
   type Template,
+  type TilesetRef,
   type TiledMap,
   type Tileset,
 } from './model.js';
@@ -155,6 +156,15 @@ export function checkMap(map: TiledMap): Diagnostic[] {
     const ref = map.tilesets.find((r) => r.source && resolveRef(map.file, r.source) === source);
     return ref && ref.firstGid + (t.gid & GID_MASK) - t.tileset.firstGid;
   };
+  // Size of a tile from an image tileset; a collection of images has one size per tile, not known here.
+  const tileSizeOf = (gid: number): { width: number; height: number } | undefined => {
+    let best: TilesetRef | undefined;
+    for (const r of map.tilesets)
+      if (r.firstGid <= gid && (!best || r.firstGid > best.firstGid)) best = r;
+    const ts = best?.tileset;
+    if (!ts?.image || ts.tileWidth === undefined || ts.tileHeight === undefined) return undefined;
+    return { width: ts.tileWidth, height: ts.tileHeight };
+  };
   // Isometric maps store object positions on the unrotated grid, where a
   // tile is tileHeight wide on both axes.
   const isometric = map.orientation === 'isometric';
@@ -256,10 +266,26 @@ export function checkMap(map: TiledMap): Diagnostic[] {
               }
             }
           }
+          // A tile object without a size is drawn at the size of its tile.
+          let sizeKnown = true;
+          if (
+            shape.gid !== undefined &&
+            (shape.width === undefined || shape.height === undefined)
+          ) {
+            const size = tileSizeOf(shape.gid & GID_MASK);
+            if (size)
+              shape = {
+                ...shape,
+                width: shape.width ?? size.width,
+                height: shape.height ?? size.height,
+              };
+            else sizeKnown = false;
+          }
           const b = objectBounds(shape);
           if (
             !map.infinite &&
             boundsKnown &&
+            sizeKnown &&
             (b.right < 0 || b.bottom < 0 || b.left > mapWidth || b.top > mapHeight)
           ) {
             report(

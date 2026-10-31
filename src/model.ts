@@ -30,6 +30,9 @@ export interface Tileset {
   /** Undefined when the file does not say and the image size is unknown. */
   tileCount?: number;
   image?: string;
+  /** Tile size as written in the tileset; what a tile object without a size is drawn at. */
+  tileWidth?: number;
+  tileHeight?: number;
   /** Image size as written in the tileset, to compare against the real file. */
   imageWidth?: number;
   imageHeight?: number;
