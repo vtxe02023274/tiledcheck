@@ -36,6 +36,26 @@ describe('imageSize', () => {
     });
   });
 
+  it('reads OS/2 bitmaps and JPEG markers after fill bytes', () => {
+    const os2 = Buffer.alloc(26);
+    os2.write('BM', 0, 'ascii');
+    os2.writeUInt32LE(12, 14);
+    os2.writeUInt16LE(64, 18);
+    os2.writeUInt16LE(32, 20);
+    os2.writeUInt16LE(1, 22);
+    os2.writeUInt16LE(24, 24);
+    expect(imageSize(write('os2.bmp', os2))).toEqual({ width: 64, height: 32 });
+
+    const jpeg = Buffer.from([
+      0xff, 0xd8, 0xff, 0xe0, 0x00, 0x04, 0x00, 0x00, 0xff, 0xff, 0xff, 0xc0, 0x00, 0x11, 0x08,
+      0x00, 0x60, 0x00, 0x80, 0x03,
+    ]);
+    expect(imageSize(write('fill.jpg', Buffer.concat([jpeg, Buffer.alloc(16)])))).toEqual({
+      width: 128,
+      height: 96,
+    });
+  });
+
   it('returns undefined for formats it does not know', () => {
     expect(imageSize(write('a.webp', Buffer.from('RIFF....WEBP')))).toBeUndefined();
   });

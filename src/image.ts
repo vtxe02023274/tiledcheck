@@ -26,6 +26,8 @@ export function imageSize(path: string): { width: number; height: number } | und
     return { width: b.readUInt16LE(6), height: b.readUInt16LE(8) };
   }
   if (b.length >= 26 && b.toString('ascii', 0, 2) === 'BM') {
+    // OS/2 bitmaps have a 12 byte header with 16-bit sizes.
+    if (b.readUInt32LE(14) === 12) return { width: b.readUInt16LE(18), height: b.readUInt16LE(20) };
     return { width: Math.abs(b.readInt32LE(18)), height: Math.abs(b.readInt32LE(22)) };
   }
   if (b.length >= 4 && b[0] === 0xff && b[1] === 0xd8) {
@@ -34,6 +36,11 @@ export function imageSize(path: string): { width: number; height: number } | und
     while (o + 9 < b.length) {
       if (b[o] !== 0xff) return undefined;
       const marker = b[o + 1]!;
+      // Any number of 0xff fill bytes may come before a marker.
+      if (marker === 0xff) {
+        o++;
+        continue;
+      }
       const size = b.readUInt16BE(o + 2);
       if (
         marker >= 0xc0 &&
